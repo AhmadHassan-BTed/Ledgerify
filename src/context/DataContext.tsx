@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { Dataset, NormalizedOrder, SheetData } from '../../types/order';
+import { Dataset, NormalizedOrder, SheetData } from '../types/order';
 import { useServices } from './ServiceContext';
 
 interface DataContextType {
@@ -121,7 +121,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Merge unique orders from all ledger sheets
       const seen = new Set<string>();
       const combined: NormalizedOrder[] = [];
-      for (const s of Object.values(activeDataset.sheets)) {
+      for (const s of Object.values(activeDataset.sheets) as SheetData[]) {
         for (const o of s.orders) {
           if (!seen.has(o.orderNumber)) {
             seen.add(o.orderNumber);
@@ -147,7 +147,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (secondarySelectedSheet === 'All Sheets (Combined)') {
       const seen = new Set<string>();
       const combined: NormalizedOrder[] = [];
-      for (const s of Object.values(secondaryDataset.sheets)) {
+      for (const s of Object.values(secondaryDataset.sheets) as SheetData[]) {
         for (const o of s.orders) {
           if (!seen.has(o.orderNumber)) {
             seen.add(o.orderNumber);

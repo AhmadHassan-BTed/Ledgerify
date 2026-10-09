@@ -2,6 +2,7 @@ import React from 'react';
 import { GitCompare, ArrowRightLeft, TrendingUp, TrendingDown, Layers, FileSpreadsheet } from 'lucide-react';
 import { useServices } from '../../context/ServiceContext';
 import { useData } from '../../context/DataContext';
+import { useFilters } from '../../context/FilterContext';
 import { Card } from '../ui/Card';
 import { ComparisonLineChart } from '../charts/ComparisonLineChart';
 
@@ -15,6 +16,8 @@ export const CompareView: React.FC = () => {
     setSecondaryDatasetId,
     loadBothAndCompare
   } = useData();
+
+  const { filteredOrders, secondaryFilteredOrders, activeCurrency, secondaryCurrency } = useFilters();
 
   const datasetA = datasets.find(d => d.id === activeDatasetId) || datasets[0];
   const datasetB = datasets.find(d => d.id === secondaryDatasetId) || datasets[1] || datasets[0];
@@ -43,7 +46,12 @@ export const CompareView: React.FC = () => {
     );
   }
 
-  const comparison = compareService.compareDatasets(datasetA, datasetB);
+  const comparison = compareService.compareDatasets(
+    datasetA,
+    datasetB,
+    filteredOrders.length > 0 ? filteredOrders : datasetA.orders,
+    secondaryFilteredOrders.length > 0 ? secondaryFilteredOrders : datasetB.orders
+  );
 
   return (
     <div className="space-y-6">
@@ -105,7 +113,7 @@ export const CompareView: React.FC = () => {
             </span>
           </div>
           <span className="text-[11px] text-zinc-500 mt-2 truncate">
-            {datasetA.currency}{datasetA.orders.reduce((s,o)=>s+o.orderValue,0).toFixed(0)} vs {datasetB.currency}{datasetB.orders.reduce((s,o)=>s+o.orderValue,0).toFixed(0)}
+            {activeCurrency}{comparison.sideBySideRows[0]?.valueA} vs {secondaryCurrency}{comparison.sideBySideRows[0]?.valueB}
           </span>
         </div>
 
@@ -135,7 +143,7 @@ export const CompareView: React.FC = () => {
             </span>
           </div>
           <span className="text-[11px] text-zinc-500 mt-2">
-            {datasetA.orders.length} vs {datasetB.orders.length} total orders
+            Volume variance
           </span>
         </div>
 
@@ -176,8 +184,8 @@ export const CompareView: React.FC = () => {
           data={comparison.monthlyOverlay}
           nameA={datasetA.name}
           nameB={datasetB.name}
-          currA={datasetA.currency}
-          currB={datasetB.currency}
+          currA={activeCurrency}
+          currB={secondaryCurrency}
         />
       </Card>
 
