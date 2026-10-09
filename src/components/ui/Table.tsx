@@ -1,0 +1,222 @@
+import React, { useState, useMemo } from 'react';
+import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Download, Search } from 'lucide-react';
+
+export interface Column<T> {
+  header: string;
+  accessorKey?: keyof T;
+  cell?: (row: T) => React.ReactNode;
+  sortable?: boolean;
+  className?: string;
+}
+
+interface TableProps<T> {
+  data: T[];
+  columns: Column<T>[];
+  pageSize?: number;
+  searchPlaceholder?: string;
+  searchField?: (row: T) => string;
+  exportFilename?: string;
+  emptyMessage?: string;
+  headerAction?: React.ReactNode;
+}
+
+export function Table<T extends Record<string, any>>({
+  data,
+  columns,
+  pageSize = 10,
+  searchPlaceholder = 'Search records...',
+  searchField,
+  exportFilename = 'ledger_export.csv',
+  emptyMessage = 'No records match your criteria',
+  headerAction
+}: TableProps<T>) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  // Filter
+  const filteredData = useMemo(() => {
+    if (!searchTerm.trim()) return data;
+    const term = searchTerm.toLowerCase();
+    return data.filter(row => {
+      if (searchField) {
+        return searchField(row).toLowerCase().includes(term);
+      }
+      return Object.values(row).some(v =>
+        String(v).toLowerCase().includes(term)
+      );
+    });
+  }, [data, searchTerm, searchField]);
+
+  // Sort
+  const sortedData = useMemo(() => {
+    if (!sortKey) return filteredData;
+    return [...filteredData].sort((a, b) => {
+      const valA = a[sortKey];
+      const valB = b[sortKey];
+      if (valA === valB) return 0;
+      if (valA === null || valA === undefined) return 1;
+      if (valB === null || valB === undefined) return -1;
+
+      if (typeof valA === 'number' && typeof valB === 'number') {
+        return sortDir === 'asc' ? valA - valB : valB - valA;
+      }
+      return sortDir === 'asc'
+        ? String(valA).localeCompare(String(valB))
+        : String(valB).localeCompare(String(valA));
+    });
+  }, [filteredData, sortKey, sortDir]);
+
+  // Pagination
+  const totalPages = Math.ceil(sortedData.length / pageSize) || 1;
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedData.slice(start, start + pageSize);
+  }, [sortedData, currentPage, pageSize]);
+
+  const handleSort = (key?: string) => {
+    if (!key) return;
+    if (sortKey === key) {
+      setSortDir(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortDir('desc');
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (data.length === 0) return;
+    const headers = columns.map(c => c.header);
+    const rows = sortedData.map(row => {
+      return columns.map(c => {
+        const val = c.accessorKey ? row[c.accessorKey] : '';
+        return `"${String(val ?? '').replace(/"/g, '""')}"`;
+      }).join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = exportFilename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="w-full">
+      {/* Controls Bar */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
+            placeholder={searchPlaceholder}
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-obsidian-850 border border-obsidian-700/80 rounded-xl text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-purple-500 transition-colors"
+          />
+        </div>
+
+        <div className="flex items-center gap-2">
+          {headerAction}
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-obsidian-800 hover:bg-obsidian-750 text-zinc-300 border border-obsidian-700 rounded-xl transition-colors"
+          >
+            <Download className="w-3.5 h-3.5 text-purple-400" />
+            <span>Export CSV</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Table Container */}
+      <div className="overflow-x-auto rounded-xl border border-obsidian-700/60 bg-obsidian-900/60">
+        <table className="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr className="border-b border-obsidian-750 bg-obsidian-850/70 text-zinc-400">
+              {columns.map((col, idx) => (
+                <th
+                  key={idx}
+                  className={`py-3 px-4 font-semibold select-none ${col.className || ''} ${
+                    col.sortable ? 'cursor-pointer hover:text-zinc-200' : ''
+                  }`}
+                  onClick={() => col.sortable && handleSort(col.accessorKey as string)}
+                >
+                  <div className="inline-flex items-center gap-1.5">
+                    <span>{col.header}</span>
+                    {col.sortable && sortKey === col.accessorKey && (
+                      sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-purple-400" /> : <ChevronDown className="w-3.5 h-3.5 text-purple-400" />
+                    )}
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-obsidian-800/60 text-zinc-300">
+            {paginatedData.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="text-center py-10 text-zinc-500">
+                  {emptyMessage}
+                </td>
+              </tr>
+            ) : (
+              paginatedData.map((row, rIdx) => (
+                <tr
+                  key={rIdx}
+                  className="hover:bg-obsidian-800/40 transition-colors"
+                >
+                  {columns.map((col, cIdx) => (
+                    <td key={cIdx} className={`py-3 px-4 ${col.className || ''}`}>
+                      {col.cell
+                        ? col.cell(row)
+                        : col.accessorKey
+                        ? String(row[col.accessorKey] ?? '')
+                        : ''}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Pagination Footer */}
+      <div className="flex items-center justify-between mt-3 text-xs text-zinc-400 px-1">
+        <div>
+          Showing {sortedData.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} to{' '}
+          {Math.min(currentPage * pageSize, sortedData.length)} of {sortedData.length} records
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            disabled={currentPage <= 1}
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            className="p-1.5 rounded-lg border border-obsidian-700 bg-obsidian-850 hover:bg-obsidian-800 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <span className="px-2">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            type="button"
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            className="p-1.5 rounded-lg border border-obsidian-700 bg-obsidian-850 hover:bg-obsidian-800 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
