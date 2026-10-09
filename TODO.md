@@ -8,6 +8,7 @@
 ## 1. Direct Answers & UX Architecture Decisions
 
 ### Q1: "Why does it open stuff in the form of tabs? And why does it open tabs in a repeated way?"
+
 - **Current Behavior**: The app currently treats each dataset/view like a dynamic browser tab, appending new tabs to the tab strip repeatedly whenever a view or dataset is opened. This clutters the UI and confuses non-technical users.
 - **Solution for Next Session**:
   - **Remove repeated tab proliferation**. Replace the tab spam with **clean single-view in-place navigation** (matching the modern reference design).
@@ -15,6 +16,7 @@
   - If multiple datasets exist, switch them via a clean dataset selector pill/dropdown in the top navigation bar rather than opening new tabs.
 
 ### Q2: "Comparison should ONLY enable if 2 XLS files are uploaded, with naming & region dropdown (UK, USA, UAE, etc.)"
+
 - **Solution for Next Session**:
   - **Gate Compare Mode**: The "Compare" toggle/button will remain disabled (with a tooltip "Upload a second dataset to enable comparison") until exactly 2 datasets are uploaded.
   - **Dataset Naming & Region Tagging on Upload**:
@@ -31,6 +33,7 @@
   - In Compare View, use these custom names and region flags in side-by-side metric headers (e.g. "🇬🇧 UK vs 🇺🇸 USA").
 
 ### Q3: "Dev Mode in Settings to show Health and Data Quality"
+
 - **Solution for Next Session**:
   - Add a **"Developer & Data Quality Mode"** toggle in the Settings drawer/panel (default: **OFF**).
   - **When OFF (Standard Executive Mode)**: The interface is clean, uncluttered, and 100% focused on business KPIs, sales, customers, and inventory. No technical jargon, no raw schema logs.
@@ -93,7 +96,7 @@
 2. [ ] **Navigation & Tabs**: Eliminate tab duplication; make navigation switch views in-place.
 3. [ ] **Compare Mode Gating & Region Dropdown**:
    - Require 2 datasets to enable Compare.
-   - Add naming input & Region dropdown (`UK`, `USA`, `UAE`, etc.) on upload.
+   - Add naming input & Region dropdown (`UK`, `USA`, `UAE`, etc.) on upload. so there will be no hardcoded currencies.
 4. [ ] **Settings Dev Mode**: Add "Developer & Data Quality Mode" toggle.
 5. [ ] **Sortable Tables**: Add click-to-sort headers in `Table.tsx`.
 6. [ ] **Drill-Down Modal**: Create `DrillDownModal.tsx` and wire click handlers to charts & customer rows.
