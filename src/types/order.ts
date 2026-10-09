@@ -1,6 +1,6 @@
 export interface ParsedFragranceItem {
   name: string;
-  size: '50ml' | '100ml' | 'trio' | 'discovery' | 'other';
+  size: string; // Dynamically extracted: e.g. "50ml", "100ml", "Travel", "Discovery", etc.
   raw: string;
 }
 
@@ -19,16 +19,12 @@ export interface NormalizedOrder {
   date: string; // YYYY-MM-DD
   month: string; // YYYY-MM
   dayOfWeek: number; // 0-6 (Sun-Sat)
-  hasTrio: boolean;
-  hasDiscovery: boolean;
-  trioQty: number;
-  trioAmount: number;
-  discoveryQty: number;
-  discoveryAmount: number;
-  qty50ml: number;
-  amount50ml: number;
-  qty100ml: number;
-  amount100ml: number;
+
+  // Dynamically discovered category quantities and amounts (e.g. Trio, Discovery, 50ml, 100ml, Sample, etc.)
+  categoryQuantities: Record<string, number>;
+  categoryAmounts: Record<string, number>;
+
+  // Status indicators
   isRefunded: boolean;
   isPartiallyRefunded: boolean;
   isCancelled: boolean;
@@ -50,17 +46,35 @@ export interface DataQualitySummary {
   flaggedOrders: NormalizedOrder[];
 }
 
+export interface SheetData {
+  name: string;
+  rowCount: number;
+  headers: string[];
+  orders: NormalizedOrder[];
+  isLedger: boolean;
+}
+
 export interface Dataset {
   id: string;
   name: string;
   filename: string;
   sourceType: 'UK' | 'US' | 'CUSTOM';
   currency: string; // '£' | '$' | '€'
-  orders: NormalizedOrder[];
   totalRows: number;
   uploadedAt: string;
-  availableSheets: string[];
+
+  // Multi-sheet / Multi-page support
+  sheets: Record<string, SheetData>;
+  sheetNames: string[];
   selectedSheet: string;
+
+  // Active orders (from selectedSheet or combined)
+  orders: NormalizedOrder[];
+
+  // Dynamically derived metadata at runtime (never hardcoded)
+  discoveredCategories: string[];
+  discoveredVariants: string[];
+
   dataQuality: DataQualitySummary;
 }
 

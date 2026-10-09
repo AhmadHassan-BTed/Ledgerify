@@ -1,4 +1,4 @@
-import { Dataset } from '../../types/order';
+import { Dataset, NormalizedOrder } from '../../types/order';
 import { CompareMetrics } from '../../types/analytics';
 import { FinanceService } from './FinanceService';
 import { ExecutiveService } from './ExecutiveService';
@@ -9,11 +9,19 @@ export class CompareService {
     private executiveService: ExecutiveService
   ) {}
 
-  compareDatasets(datasetA: Dataset, datasetB: Dataset): CompareMetrics {
-    const finA = this.financeService.calculateMetrics(datasetA.orders);
-    const finB = this.financeService.calculateMetrics(datasetB.orders);
-    const execA = this.executiveService.calculateMetrics(datasetA.orders);
-    const execB = this.executiveService.calculateMetrics(datasetB.orders);
+  compareDatasets(
+    datasetA: Dataset,
+    datasetB: Dataset,
+    customOrdersA?: NormalizedOrder[],
+    customOrdersB?: NormalizedOrder[]
+  ): CompareMetrics {
+    const ordersA = customOrdersA || datasetA.orders;
+    const ordersB = customOrdersB || datasetB.orders;
+
+    const finA = this.financeService.calculateMetrics(ordersA);
+    const finB = this.financeService.calculateMetrics(ordersB);
+    const execA = this.executiveService.calculateMetrics(ordersA);
+    const execB = this.executiveService.calculateMetrics(ordersB);
 
     const calcDelta = (valA: number, valB: number): number => {
       if (valA === 0) return valB > 0 ? 100 : 0;
@@ -90,10 +98,13 @@ export class CompareService {
       ordersB: mapB.get(month)?.orders || 0
     }));
 
-    // Category comparison
+    // Dynamic Category comparison (derived from all present categories in A and B)
     const catMapA = new Map(finA.categoryBreakdown.map(c => [c.name, c.amount]));
     const catMapB = new Map(finB.categoryBreakdown.map(c => [c.name, c.amount]));
-    const allCategories = ['100ml Bottles', '50ml Bottles', 'Trio Sets', 'Discovery Sets'];
+    const allCategories = Array.from(new Set([
+      ...finA.categoryBreakdown.map(c => c.name),
+      ...finB.categoryBreakdown.map(c => c.name)
+    ]));
 
     const categoryComparison = allCategories.map(cat => ({
       category: cat,

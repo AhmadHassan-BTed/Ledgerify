@@ -17,11 +17,8 @@ export interface MonthlyRevenueItem {
 
 export interface StackedMonthlyCategoryItem {
   month: string;
-  sets: number;
-  size50ml: number;
-  size100ml: number;
-  other: number;
   total: number;
+  [categoryKey: string]: any; // Dynamic category keys derived at runtime
 }
 
 export interface DailyRevenueItem {
@@ -60,8 +57,7 @@ export interface ExecutiveMetrics {
 export interface FragranceStockItem {
   name: string;
   unitsSold: number;
-  size50Count: number;
-  size100Count: number;
+  variantsBreakdown: Record<string, number>; // Dynamic variants derived from line items
   estimatedRevenue: number;
   lastSaleDate: string;
   reorderStatus: 'optimal' | 'reorder_soon' | 'urgent';

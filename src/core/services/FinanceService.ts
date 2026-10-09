@@ -1,6 +1,19 @@
 import { NormalizedOrder } from '../../types/order';
 import { FinanceMetrics, CategoryBreakdownItem, MonthlyRevenueItem, StackedMonthlyCategoryItem, DailyRevenueItem } from '../../types/analytics';
 
+const PALETTE = [
+  '#8b5cf6', // Obsidian Purple
+  '#6366f1', // Indigo
+  '#ec4899', // Pink
+  '#10b981', // Emerald
+  '#06b6d4', // Cyan
+  '#f59e0b', // Amber
+  '#3b82f6', // Blue
+  '#14b8a6', // Teal
+  '#a855f7', // Lavender
+  '#e11d48', // Rose
+];
+
 export class FinanceService {
   calculateMetrics(orders: NormalizedOrder[]): FinanceMetrics {
     if (!orders || orders.length === 0) {
@@ -11,17 +24,9 @@ export class FinanceService {
     let totalRefundLiability = 0;
     let refundOrderCount = 0;
 
-    let totalTrio = 0;
-    let totalDiscovery = 0;
-    let total50ml = 0;
-    let total100ml = 0;
-
-    let trioQty = 0;
-    let discoveryQty = 0;
-    let qty50ml = 0;
-    let qty100ml = 0;
-
-    const monthlyMap = new Map<string, { revenue: number; orders: number; trio: number; disc: number; s50: number; s100: number }>();
+    // Dynamically track all categories discovered across rows
+    const categoryTotals = new Map<string, { amount: number; quantity: number }>();
+    const monthlyMap = new Map<string, { revenue: number; orders: number; catAmounts: Record<string, number> }>();
     const dailyMap = new Map<string, { revenue: number; orders: number }>();
 
     for (const order of orders) {
@@ -32,28 +37,28 @@ export class FinanceService {
         refundOrderCount++;
       }
 
-      totalTrio += order.trioAmount;
-      totalDiscovery += order.discoveryAmount;
-      total50ml += order.amount50ml;
-      total100ml += order.amount100ml;
-
-      trioQty += order.trioQty;
-      discoveryQty += order.discoveryQty;
-      qty50ml += order.qty50ml;
-      qty100ml += order.qty100ml;
+      // Dynamic category accumulation
+      for (const [catName, amount] of Object.entries(order.categoryAmounts)) {
+        const qty = order.categoryQuantities[catName] || 0;
+        if (!categoryTotals.has(catName)) {
+          categoryTotals.set(catName, { amount: 0, quantity: 0 });
+        }
+        const cData = categoryTotals.get(catName)!;
+        cData.amount += amount;
+        cData.quantity += qty;
+      }
 
       // Monthly aggregation
       const mKey = order.month || 'Other';
       if (!monthlyMap.has(mKey)) {
-        monthlyMap.set(mKey, { revenue: 0, orders: 0, trio: 0, disc: 0, s50: 0, s100: 0 });
+        monthlyMap.set(mKey, { revenue: 0, orders: 0, catAmounts: {} });
       }
       const mData = monthlyMap.get(mKey)!;
       mData.revenue += order.orderValue;
       mData.orders += 1;
-      mData.trio += order.trioAmount;
-      mData.disc += order.discoveryAmount;
-      mData.s50 += order.amount50ml;
-      mData.s100 += order.amount100ml;
+      for (const [catName, amount] of Object.entries(order.categoryAmounts)) {
+        mData.catAmounts[catName] = (mData.catAmounts[catName] || 0) + amount;
+      }
 
       // Daily aggregation
       const dKey = order.date || 'Unknown';
@@ -69,38 +74,18 @@ export class FinanceService {
     const aov = totalOrders > 0 ? totalRevenue / totalOrders : 0;
     const refundRate = totalOrders > 0 ? (refundOrderCount / totalOrders) * 100 : 0;
 
-    // Category breakdown
-    const categorySum = (totalTrio + totalDiscovery + total50ml + total100ml) || totalRevenue || 1;
-    const categoryBreakdown: CategoryBreakdownItem[] = [
-      {
-        name: '100ml Bottles',
-        amount: total100ml,
-        quantity: qty100ml,
-        percentage: Math.round((total100ml / categorySum) * 100),
-        color: '#8b5cf6' // Obsidian Purple
-      },
-      {
-        name: '50ml Bottles',
-        amount: total50ml,
-        quantity: qty50ml,
-        percentage: Math.round((total50ml / categorySum) * 100),
-        color: '#6366f1' // Indigo
-      },
-      {
-        name: 'Trio Sets',
-        amount: totalTrio,
-        quantity: trioQty,
-        percentage: Math.round((totalTrio / categorySum) * 100),
-        color: '#ec4899' // Pink / Magenta
-      },
-      {
-        name: 'Discovery Sets',
-        amount: totalDiscovery,
-        quantity: discoveryQty,
-        percentage: Math.round((totalDiscovery / categorySum) * 100),
-        color: '#10b981' // Emerald
-      }
-    ];
+    // Dynamic Category Breakdown
+    const totalCatAmountSum = Array.from(categoryTotals.values()).reduce((sum, c) => sum + c.amount, 0) || totalRevenue || 1;
+    const categoryBreakdown: CategoryBreakdownItem[] = Array.from(categoryTotals.entries())
+      .filter(([_, data]) => data.amount > 0 || data.quantity > 0)
+      .map(([name, data], idx) => ({
+        name,
+        amount: Math.round(data.amount * 100) / 100,
+        quantity: data.quantity,
+        percentage: Math.round((data.amount / totalCatAmountSum) * 100),
+        color: PALETTE[idx % PALETTE.length]
+      }))
+      .sort((a, b) => b.amount - a.amount);
 
     // Sorted monthly revenue
     const sortedMonths = Array.from(monthlyMap.keys()).sort();
@@ -114,16 +99,17 @@ export class FinanceService {
       };
     });
 
+    // Dynamic Stacked Monthly Categories
     const stackedMonthlyCategory: StackedMonthlyCategoryItem[] = sortedMonths.map(m => {
       const data = monthlyMap.get(m)!;
-      return {
+      const item: StackedMonthlyCategoryItem = {
         month: m,
-        sets: Math.round((data.trio + data.disc) * 100) / 100,
-        size50ml: Math.round(data.s50 * 100) / 100,
-        size100ml: Math.round(data.s100 * 100) / 100,
-        other: 0,
         total: Math.round(data.revenue * 100) / 100
       };
+      for (const [catName, amt] of Object.entries(data.catAmounts)) {
+        item[catName] = Math.round(amt * 100) / 100;
+      }
+      return item;
     });
 
     const dailyRevenueSeries: DailyRevenueItem[] = Array.from(dailyMap.entries())

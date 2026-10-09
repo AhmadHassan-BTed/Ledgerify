@@ -1,6 +1,7 @@
 import React from 'react';
-import { Search, RotateCcw, Calendar, Filter } from 'lucide-react';
+import { Search, RotateCcw, Layers, Filter } from 'lucide-react';
 import { useFilters } from '../../context/FilterContext';
+import { useData } from '../../context/DataContext';
 import { StatusFilter } from '../../types/filter';
 
 export const FilterBar: React.FC = () => {
@@ -11,8 +12,17 @@ export const FilterBar: React.FC = () => {
     setStatusFilter,
     resetFilters,
     availableMonths,
-    filteredOrders
+    filteredOrders,
+    secondaryFilteredOrders
   } = useFilters();
+
+  const {
+    selectedSheet,
+    setSelectedSheet,
+    availableSheets,
+    activeDataset,
+    isCompareEnabled
+  } = useData();
 
   const statuses: { id: StatusFilter; label: string }[] = [
     { id: 'all', label: 'All Statuses' },
@@ -24,7 +34,7 @@ export const FilterBar: React.FC = () => {
   return (
     <div className="w-full bg-obsidian-900/60 border border-obsidian-800 rounded-2xl p-3 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 backdrop-blur-md">
       {/* Search Input */}
-      <div className="relative flex-1 max-w-md">
+      <div className="relative flex-1 max-w-sm">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
         <input
           type="text"
@@ -44,8 +54,33 @@ export const FilterBar: React.FC = () => {
         )}
       </div>
 
-      {/* Month & Status Filter Pills */}
+      {/* Sheet / Page Selector + Month & Status Pills */}
       <div className="flex flex-wrap items-center gap-2">
+        {/* Dynamic Sheet / Page Selector */}
+        {availableSheets.length > 0 && (
+          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-obsidian-850/90 border border-purple-800/40 rounded-xl text-xs">
+            <Layers className="w-3.5 h-3.5 text-purple-400" />
+            <span className="text-[11px] text-zinc-400 font-medium hidden sm:inline">Page:</span>
+            <select
+              value={selectedSheet}
+              onChange={(e) => setSelectedSheet(e.target.value)}
+              className="bg-transparent text-xs text-purple-200 font-semibold focus:outline-none cursor-pointer max-w-[160px] truncate"
+              title="Select specific sheet or page from the uploaded workbook"
+            >
+              {availableSheets.map(s => {
+                const count = s === 'All Sheets (Combined)'
+                  ? activeDataset?.totalRows
+                  : activeDataset?.sheets[s]?.rowCount;
+                return (
+                  <option key={s} value={s} className="bg-obsidian-900 text-zinc-200">
+                    {s} {count !== undefined ? `(${count})` : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
+
         {/* Month Pills */}
         <div className="flex items-center gap-1 p-0.5 bg-obsidian-850/80 border border-obsidian-750 rounded-xl text-xs">
           <button
@@ -57,7 +92,7 @@ export const FilterBar: React.FC = () => {
                 : 'text-zinc-400 hover:text-zinc-200'
             }`}
           >
-            All Time
+            All
           </button>
           {availableMonths.map((month) => {
             const isSelected = filters.selectedMonth === month;
@@ -120,6 +155,9 @@ export const FilterBar: React.FC = () => {
 
         <div className="text-[11px] font-mono text-zinc-400 pl-1">
           {filteredOrders.length} orders
+          {isCompareEnabled && secondaryFilteredOrders.length > 0 && (
+            <span className="text-cyan-400 ml-1">vs {secondaryFilteredOrders.length}</span>
+          )}
         </div>
       </div>
     </div>

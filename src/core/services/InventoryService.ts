@@ -1,41 +1,51 @@
 import { NormalizedOrder } from '../../types/order';
 import { InventoryMetrics, FragranceStockItem } from '../../types/analytics';
 
+const PALETTE = [
+  '#8b5cf6', // Purple
+  '#6366f1', // Indigo
+  '#ec4899', // Pink
+  '#10b981', // Emerald
+  '#06b6d4', // Cyan
+  '#f59e0b', // Amber
+  '#3b82f6', // Blue
+  '#14b8a6', // Teal
+];
+
 export class InventoryService {
   calculateMetrics(orders: NormalizedOrder[]): InventoryMetrics {
     if (!orders || orders.length === 0) {
       return this.getEmptyMetrics();
     }
 
-    let totalTrioQty = 0;
-    let totalDiscoveryQty = 0;
-    let total50mlQty = 0;
-    let total100mlQty = 0;
+    // Dynamic calculations across orders
+    let totalUnitsSold = 0;
+    let totalRevenue = 0;
+    const sizeCounts = new Map<string, number>();
 
     const fragranceMap = new Map<string, {
       unitsSold: number;
-      size50Count: number;
-      size100Count: number;
+      variantsBreakdown: Record<string, number>;
       revenue: number;
       lastDate: string;
     }>();
 
     for (const order of orders) {
-      totalTrioQty += order.trioQty;
-      totalDiscoveryQty += order.discoveryQty;
-      total50mlQty += order.qty50ml;
-      total100mlQty += order.qty100ml;
+      totalUnitsSold += order.orderQuantity;
+      totalRevenue += order.orderValue;
 
-      // Parse individual fragrance line items
+      // Dynamic line item parsing
       for (const item of order.fragrancesParsed) {
         const name = item.name;
         if (!name) continue;
 
+        const sizeKey = item.size || 'Standard';
+        sizeCounts.set(sizeKey, (sizeCounts.get(sizeKey) || 0) + 1);
+
         if (!fragranceMap.has(name)) {
           fragranceMap.set(name, {
             unitsSold: 0,
-            size50Count: 0,
-            size100Count: 0,
+            variantsBreakdown: {},
             revenue: 0,
             lastDate: order.date
           });
@@ -43,12 +53,7 @@ export class InventoryService {
 
         const data = fragranceMap.get(name)!;
         data.unitsSold += 1;
-        if (item.size === '50ml') data.size50Count += 1;
-        if (item.size === '100ml') data.size100Count += 1;
-
-        // Estimated revenue contribution per bottle
-        const estPrice = item.size === '100ml' ? 22 : 16;
-        data.revenue += estPrice;
+        data.variantsBreakdown[sizeKey] = (data.variantsBreakdown[sizeKey] || 0) + 1;
 
         if (order.date > data.lastDate) {
           data.lastDate = order.date;
@@ -56,61 +61,45 @@ export class InventoryService {
       }
     }
 
-    const totalUnitsSold = totalTrioQty + totalDiscoveryQty + total50mlQty + total100mlQty;
-    const denominator = totalUnitsSold || 1;
+    // Dynamically derive average unit price from real data
+    const averageUnitPrice = totalUnitsSold > 0 ? (totalRevenue / totalUnitsSold) : 25;
 
-    const unitsBySize = [
-      {
-        name: '100ml Bottles',
-        size: '100ml Bottles',
-        count: total100mlQty,
-        percentage: Math.round((total100mlQty / denominator) * 100),
-        color: '#8b5cf6'
-      },
-      {
-        name: '50ml Bottles',
-        size: '50ml Bottles',
-        count: total50mlQty,
-        percentage: Math.round((total50mlQty / denominator) * 100),
-        color: '#6366f1'
-      },
-      {
-        name: 'Trio Sets',
-        size: 'Trio Sets',
-        count: totalTrioQty,
-        percentage: Math.round((totalTrioQty / denominator) * 100),
-        color: '#ec4899'
-      },
-      {
-        name: 'Discovery Sets',
-        size: 'Discovery Sets',
-        count: totalDiscoveryQty,
-        percentage: Math.round((totalDiscoveryQty / denominator) * 100),
-        color: '#10b981'
-      }
-    ];
+    // Dynamically calculate estimated revenue per fragrance based on observed unit price
+    for (const [, data] of fragranceMap) {
+      data.revenue = Math.round(data.unitsSold * averageUnitPrice * 100) / 100;
+    }
+
+    // Dynamic units by size
+    const totalParsedUnits = Array.from(sizeCounts.values()).reduce((a, b) => a + b, 0) || totalUnitsSold || 1;
+    const unitsBySize = Array.from(sizeCounts.entries())
+      .map(([size, count], idx) => ({
+        name: size,
+        size,
+        count,
+        percentage: Math.round((count / totalParsedUnits) * 100),
+        color: PALETTE[idx % PALETTE.length]
+      }))
+      .sort((a, b) => b.count - a.count);
 
     // Build fragrance velocity inventory list
     const allFragrances: FragranceStockItem[] = Array.from(fragranceMap.entries()).map(([name, data]) => {
       let reorderStatus: FragranceStockItem['reorderStatus'] = 'optimal';
-      if (data.unitsSold > 40) {
-        reorderStatus = 'urgent'; // Fast velocity, need frequent reorder
-      } else if (data.unitsSold > 20) {
+      if (data.unitsSold > 35) {
+        reorderStatus = 'urgent';
+      } else if (data.unitsSold > 15) {
         reorderStatus = 'reorder_soon';
       }
 
       return {
         name,
         unitsSold: data.unitsSold,
-        size50Count: data.size50Count,
-        size100Count: data.size100Count,
-        estimatedRevenue: Math.round(data.revenue * 100) / 100,
+        variantsBreakdown: data.variantsBreakdown,
+        estimatedRevenue: data.revenue,
         lastSaleDate: data.lastDate || '2026-10-01',
         reorderStatus
       };
     });
 
-    // Sort by units sold descending
     allFragrances.sort((a, b) => b.unitsSold - a.unitsSold);
     const topFragrances = allFragrances.slice(0, 10);
 

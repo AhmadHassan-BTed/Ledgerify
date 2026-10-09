@@ -1,14 +1,11 @@
 import React, { useRef } from 'react';
 import {
   Upload,
-  Database,
-  Sparkles,
   GitCompare,
   FileSpreadsheet,
   CheckCircle2,
   AlertTriangle,
-  RefreshCw,
-  Trash2
+  ArrowRightLeft
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useFilters } from '../../context/FilterContext';
@@ -24,6 +21,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenUploadModal }) => {
     activeDataset,
     activeDatasetId,
     setActiveDatasetId,
+    secondaryDatasetId,
+    setSecondaryDatasetId,
+    isCompareEnabled,
+    toggleCompare,
     loadSampleDataset,
     loadBothAndCompare,
     removeDataset,
@@ -53,7 +54,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenUploadModal }) => {
   return (
     <header className="sticky top-0 z-30 w-full bg-obsidian-950/80 backdrop-blur-xl border-b border-obsidian-800/80 px-4 sm:px-6 py-3.5">
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-        {/* Brand & Dataset Selector */}
+        {/* Brand & Dataset Switcher */}
         <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-start">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center text-white font-bold shadow-glow-purple">
@@ -65,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenUploadModal }) => {
                   Ledgerify
                 </h1>
                 <span className="px-2 py-0.5 text-[10px] font-semibold bg-purple-950 text-purple-300 border border-purple-800/60 rounded-full">
-                  v1.0
+                  v1.2
                 </span>
               </div>
               <p className="text-[11px] text-zinc-400">
@@ -114,8 +115,58 @@ export const Header: React.FC<HeaderProps> = ({ onOpenUploadModal }) => {
           )}
         </div>
 
-        {/* Action Controls */}
+        {/* Action Controls & Compare Feature */}
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
+          {/* Compare Feature Toggle */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={isLoading}
+              onClick={toggleCompare}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all ${
+                isCompareEnabled
+                  ? 'bg-purple-600 text-white border-purple-400 shadow-glow-purple'
+                  : 'bg-obsidian-900 text-zinc-300 border-obsidian-700/80 hover:border-purple-500/40'
+              }`}
+              title="Toggle Comparative mode across all team dashboards"
+            >
+              <GitCompare className="w-3.5 h-3.5" />
+              <span>Compare Feature:</span>
+              <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${isCompareEnabled ? 'bg-purple-800 text-white' : 'bg-obsidian-800 text-zinc-400'}`}>
+                {isCompareEnabled ? 'ON' : 'OFF'}
+              </span>
+            </button>
+
+            {/* Quick Dataset Selector when Compare is ON */}
+            {isCompareEnabled && datasets.length >= 2 && (
+              <div className="hidden sm:flex items-center gap-1.5 p-1 bg-obsidian-900 border border-purple-800/40 rounded-xl text-xs">
+                <select
+                  value={activeDatasetId || ''}
+                  onChange={(e) => setActiveDatasetId(e.target.value)}
+                  className="bg-transparent text-purple-300 text-xs focus:outline-none cursor-pointer max-w-[100px] truncate"
+                >
+                  {datasets.map(d => (
+                    <option key={d.id} value={d.id} className="bg-obsidian-900 text-zinc-200">
+                      A: {d.name}
+                    </option>
+                  ))}
+                </select>
+                <ArrowRightLeft className="w-3 h-3 text-zinc-500" />
+                <select
+                  value={secondaryDatasetId || ''}
+                  onChange={(e) => setSecondaryDatasetId(e.target.value)}
+                  className="bg-transparent text-cyan-300 text-xs focus:outline-none cursor-pointer max-w-[100px] truncate"
+                >
+                  {datasets.map(d => (
+                    <option key={d.id} value={d.id} className="bg-obsidian-900 text-zinc-200">
+                      B: {d.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
           {/* Health Indicator */}
           {health && (
             <button
@@ -176,16 +227,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenUploadModal }) => {
             <button
               type="button"
               disabled={isLoading}
-              onClick={() => {
-                loadBothAndCompare();
-                setActiveTab('compare');
-              }}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-purple-600 hover:bg-purple-500 text-white shadow-glow-purple transition-all"
-              title="Load both datasets and trigger Compare View"
+              onClick={() => loadBothAndCompare()}
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-xl bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-800/50 transition-colors"
+              title="Load both datasets and activate Compare Feature"
             >
-              <GitCompare className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Compare UK vs US</span>
-              <span className="sm:hidden">Compare</span>
+              <span>⚡ Load Both</span>
             </button>
           </div>
 

@@ -2,29 +2,30 @@ import React from 'react';
 import {
   ShieldCheck,
   AlertTriangle,
-  FileCheck2,
   Mail,
   MapPin,
   Tag,
   DollarSign,
   Layers,
-  CheckCircle2,
-  XCircle
+  XCircle,
+  GitCompare
 } from 'lucide-react';
 import { useServices } from '../../context/ServiceContext';
 import { useFilters } from '../../context/FilterContext';
 import { useData } from '../../context/DataContext';
-import { KpiCard } from '../ui/KpiCard';
 import { Card } from '../ui/Card';
 import { Table, Column } from '../ui/Table';
 import { NormalizedOrder } from '../../types/order';
 
 export const AdminDataQualityView: React.FC = () => {
   const { adminDataQualityService } = useServices();
-  const { filteredOrders } = useFilters();
-  const { activeDataset } = useData();
+  const { filteredOrders, secondaryFilteredOrders } = useFilters();
+  const { activeDataset, secondaryDataset, isCompareEnabled } = useData();
 
-  const quality = adminDataQualityService.analyzeQuality(filteredOrders);
+  const qualityA = adminDataQualityService.analyzeQuality(filteredOrders);
+  const qualityB = isCompareEnabled && secondaryDataset
+    ? adminDataQualityService.analyzeQuality(secondaryFilteredOrders)
+    : null;
 
   const getStatusColor = (status: 'healthy' | 'warning' | 'critical') => {
     switch (status) {
@@ -55,7 +56,7 @@ export const AdminDataQualityView: React.FC = () => {
     }
   };
 
-  const statusStyle = getStatusColor(quality.status);
+  const statusStyleA = getStatusColor(qualityA.status);
 
   const flaggedColumns: Column<NormalizedOrder>[] = [
     {
@@ -123,49 +124,59 @@ export const AdminDataQualityView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Title */}
-      <div>
-        <h2 className="text-xl sm:text-2xl font-extrabold text-zinc-100 tracking-tight">
-          Data Integrity & Anomaly Triage
-        </h2>
-        <p className="text-xs text-zinc-400 mt-1">
-          Automated export sanitization, missing field detection, and Shopify record troubleshooting for {activeDataset?.filename}.
-        </p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-zinc-100 tracking-tight">
+              Data Integrity & Anomaly Triage
+            </h2>
+            {isCompareEnabled && secondaryDataset && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-950 text-purple-300 border border-purple-800/60">
+                <GitCompare className="w-3.5 h-3.5" />
+                <span>Comparing: {activeDataset?.name} vs {secondaryDataset.name}</span>
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-zinc-400 mt-1">
+            Automated export sanitization, missing field detection, and Shopify record troubleshooting for {activeDataset?.filename}.
+          </p>
+        </div>
       </div>
 
       {/* Traffic Light Health Status Banner */}
       <div
-        className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 backdrop-blur-xl ${statusStyle.bg} ${statusStyle.border}`}
+        className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 backdrop-blur-xl ${statusStyleA.bg} ${statusStyleA.border}`}
       >
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${statusStyle.border} ${statusStyle.bg}`}>
-              <ShieldCheck className={`w-6 h-6 ${statusStyle.text}`} />
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${statusStyleA.border} ${statusStyleA.bg}`}>
+              <ShieldCheck className={`w-6 h-6 ${statusStyleA.text}`} />
             </div>
-            <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-obsidian-950 ${statusStyle.dot} animate-pulse`} />
+            <span className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-obsidian-950 ${statusStyleA.dot} animate-pulse`} />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-zinc-100">
-                Data Health Status: {statusStyle.label}
+                Data Health: {statusStyleA.label} ({activeDataset?.name})
               </h3>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold ${statusStyle.bg} ${statusStyle.text} border ${statusStyle.border}`}>
-                {quality.healthScore}/100
+              <span className={`px-2 py-0.5 rounded-full text-xs font-mono font-bold ${statusStyleA.bg} ${statusStyleA.text} border ${statusStyleA.border}`}>
+                {qualityA.healthScore}/100
               </span>
             </div>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Parsed sheet <code className="text-purple-300 font-mono">[{activeDataset?.selectedSheet}]</code> without structural crashing. {quality.flaggedOrders.length} anomalies detected.
+              Active page <code className="text-purple-300 font-mono">[{activeDataset?.selectedSheet}]</code>. {qualityA.flaggedOrders.length} anomalies detected.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="text-right">
-            <span className="text-[11px] text-zinc-400 block">Total Rows Analyzed</span>
-            <span className="text-sm font-bold text-zinc-100 font-mono">
-              {quality.totalRows.toLocaleString()} rows
+        {isCompareEnabled && qualityB && (
+          <div className="p-3 rounded-xl bg-obsidian-900 border border-obsidian-750 text-xs">
+            <span className="text-zinc-400 block mb-0.5">{secondaryDataset?.name} Score</span>
+            <span className="font-mono font-bold text-cyan-300 text-sm">
+              {qualityB.healthScore}/100 ({qualityB.status})
             </span>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Anomaly Breakdown Cards */}
@@ -174,7 +185,10 @@ export const AdminDataQualityView: React.FC = () => {
           <div>
             <span className="text-[11px] text-zinc-400 block">Missing Emails</span>
             <span className="text-xl font-bold font-mono text-zinc-100 mt-1 block">
-              {quality.missingEmailCount}
+              {qualityA.missingEmailCount}
+              {isCompareEnabled && qualityB && (
+                <span className="text-xs text-zinc-500 font-normal ml-1">vs {qualityB.missingEmailCount}</span>
+              )}
             </span>
           </div>
           <Mail className="w-5 h-5 text-zinc-500" />
@@ -183,8 +197,11 @@ export const AdminDataQualityView: React.FC = () => {
         <div className="p-4 rounded-xl bg-obsidian-900 border border-obsidian-800 flex items-center justify-between">
           <div>
             <span className="text-[11px] text-zinc-400 block">Missing Cities</span>
-            <span className={`text-xl font-bold font-mono mt-1 block ${quality.missingCityCount > 0 ? 'text-amber-400' : 'text-zinc-100'}`}>
-              {quality.missingCityCount}
+            <span className={`text-xl font-bold font-mono mt-1 block ${qualityA.missingCityCount > 0 ? 'text-amber-400' : 'text-zinc-100'}`}>
+              {qualityA.missingCityCount}
+              {isCompareEnabled && qualityB && (
+                <span className="text-xs text-zinc-500 font-normal ml-1">vs {qualityB.missingCityCount}</span>
+              )}
             </span>
           </div>
           <MapPin className="w-5 h-5 text-zinc-500" />
@@ -194,7 +211,10 @@ export const AdminDataQualityView: React.FC = () => {
           <div>
             <span className="text-[11px] text-zinc-400 block">Missing Scents</span>
             <span className="text-xl font-bold font-mono text-zinc-100 mt-1 block">
-              {quality.missingFragranceCount}
+              {qualityA.missingFragranceCount}
+              {isCompareEnabled && qualityB && (
+                <span className="text-xs text-zinc-500 font-normal ml-1">vs {qualityB.missingFragranceCount}</span>
+              )}
             </span>
           </div>
           <Tag className="w-5 h-5 text-zinc-500" />
@@ -204,7 +224,10 @@ export const AdminDataQualityView: React.FC = () => {
           <div>
             <span className="text-[11px] text-zinc-400 block">$0.00 Test Orders</span>
             <span className="text-xl font-bold font-mono text-zinc-100 mt-1 block">
-              {quality.zeroValueCount}
+              {qualityA.zeroValueCount}
+              {isCompareEnabled && qualityB && (
+                <span className="text-xs text-zinc-500 font-normal ml-1">vs {qualityB.zeroValueCount}</span>
+              )}
             </span>
           </div>
           <DollarSign className="w-5 h-5 text-zinc-500" />
@@ -213,8 +236,11 @@ export const AdminDataQualityView: React.FC = () => {
         <div className="p-4 rounded-xl bg-obsidian-900 border border-obsidian-800 flex items-center justify-between">
           <div>
             <span className="text-[11px] text-zinc-400 block">High Qty (&gt;=10)</span>
-            <span className={`text-xl font-bold font-mono mt-1 block ${quality.highQuantityCount > 0 ? 'text-purple-400' : 'text-zinc-100'}`}>
-              {quality.highQuantityCount}
+            <span className={`text-xl font-bold font-mono mt-1 block ${qualityA.highQuantityCount > 0 ? 'text-purple-400' : 'text-zinc-100'}`}>
+              {qualityA.highQuantityCount}
+              {isCompareEnabled && qualityB && (
+                <span className="text-xs text-zinc-500 font-normal ml-1">vs {qualityB.highQuantityCount}</span>
+              )}
             </span>
           </div>
           <Layers className="w-5 h-5 text-zinc-500" />
@@ -223,11 +249,11 @@ export const AdminDataQualityView: React.FC = () => {
 
       {/* Flagged Orders Table */}
       <Card
-        title="Flagged Orders Requiring Correction in Shopify"
+        title={`Flagged Orders Requiring Correction in Shopify (${activeDataset?.name})`}
         subtitle="Direct order reference IDs with identified anomalies"
       >
         <Table
-          data={quality.flaggedOrders}
+          data={qualityA.flaggedOrders}
           columns={flaggedColumns}
           pageSize={10}
           searchPlaceholder="Search order number or customer name..."

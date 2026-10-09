@@ -1,7 +1,8 @@
 import React from 'react';
-import { Truck, MapPin, Box, Calendar, Clock, AlertTriangle } from 'lucide-react';
+import { Truck, MapPin, Box, Calendar, AlertTriangle, GitCompare } from 'lucide-react';
 import { useServices } from '../../context/ServiceContext';
 import { useFilters } from '../../context/FilterContext';
+import { useData } from '../../context/DataContext';
 import { KpiCard } from '../ui/KpiCard';
 import { Card } from '../ui/Card';
 import { ActivityHeatmap } from '../ui/ActivityHeatmap';
@@ -11,13 +12,16 @@ import { StatusPill } from '../ui/StatusPill';
 
 export const OperationsView: React.FC = () => {
   const { operationsService } = useServices();
-  const { filteredOrders, activeCurrency } = useFilters();
+  const { filteredOrders, secondaryFilteredOrders, activeCurrency, secondaryCurrency } = useFilters();
+  const { activeDataset, secondaryDataset, isCompareEnabled } = useData();
 
-  const metrics = operationsService.calculateMetrics(filteredOrders);
+  const metricsA = operationsService.calculateMetrics(filteredOrders);
+  const metricsB = isCompareEnabled && secondaryDataset
+    ? operationsService.calculateMetrics(secondaryFilteredOrders)
+    : null;
 
-  // Peak fulfillment day
-  const sortedDays = [...metrics.dayOfWeekActivity].sort((a, b) => b.orderCount - a.orderCount);
-  const peakDay = sortedDays[0]?.dayName || 'Monday';
+  const sortedDaysA = [...metricsA.dayOfWeekActivity].sort((a, b) => b.orderCount - a.orderCount);
+  const peakDayA = sortedDaysA[0]?.dayName || 'Monday';
 
   const triageColumns: Column<NormalizedOrder>[] = [
     {
@@ -76,68 +80,95 @@ export const OperationsView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Title */}
-      <div>
-        <h2 className="text-xl sm:text-2xl font-extrabold text-zinc-100 tracking-tight">
-          Operations, Logistics & Fulfillment Density
-        </h2>
-        <p className="text-xs text-zinc-400 mt-1">
-          Warehouse staffing distribution, weekday order spikes, packing complexity, and delivery destinations.
-        </p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-zinc-100 tracking-tight">
+              Operations, Logistics & Fulfillment Density
+            </h2>
+            {isCompareEnabled && secondaryDataset && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-950 text-purple-300 border border-purple-800/60">
+                <GitCompare className="w-3.5 h-3.5" />
+                <span>Comparing: {activeDataset?.name} vs {secondaryDataset.name}</span>
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-zinc-400 mt-1">
+            Warehouse staffing distribution, weekday order spikes, packing complexity, and delivery destinations.
+          </p>
+        </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           title="Fulfillment Volume"
-          value={metrics.totalOrders}
-          subValue="Total shipments processed"
+          value={metricsA.totalOrders}
+          subValue={isCompareEnabled && metricsB ? `vs ${secondaryDataset?.name}: ${metricsB.totalOrders} shipments` : "Total shipments processed"}
           icon={<Truck className="w-4 h-4" />}
         />
         <KpiCard
           title="Peak Staffing Day"
-          value={peakDay}
-          subValue="Highest weekly volume load"
+          value={peakDayA}
+          subValue={isCompareEnabled && metricsB ? `B Peak: ${[...metricsB.dayOfWeekActivity].sort((a,b)=>b.orderCount-a.orderCount)[0]?.dayName}` : "Highest weekly load"}
           icon={<Calendar className="w-4 h-4" />}
         />
         <KpiCard
           title="Avg Packing Complexity"
-          value={`${metrics.averageComplexity} items`}
-          subValue="Average units per box"
+          value={`${metricsA.averageComplexity} items`}
+          subValue={isCompareEnabled && metricsB ? `vs ${secondaryDataset?.name}: ${metricsB.averageComplexity} items` : "Average units per box"}
           icon={<Box className="w-4 h-4" />}
         />
         <KpiCard
           title="Triage Queue"
-          value={metrics.triageOrders.length}
-          subValue="Orders needing attention"
+          value={metricsA.triageOrders.length}
+          subValue={isCompareEnabled && metricsB ? `vs ${secondaryDataset?.name}: ${metricsB.triageOrders.length} orders` : "Shipments needing attention"}
           icon={<AlertTriangle className="w-4 h-4" />}
         />
       </div>
 
-      {/* Day of Week Heatmap Grid */}
-      <Card
-        title="Fulfillment Volume by Day of Week"
-        subtitle="Staff warehouse and packing stations according to historical density"
-        action={
-          <span className="text-[11px] font-mono text-purple-400 bg-purple-950/60 border border-purple-800/40 px-2.5 py-1 rounded-lg">
-            Weekly Cycle Matrix
-          </span>
-        }
-      >
-        <ActivityHeatmap
-          activity={metrics.dayOfWeekActivity}
-          currencySymbol={activeCurrency}
-        />
-      </Card>
+      {/* Day of Week Heatmap */}
+      {isCompareEnabled && metricsB ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card
+            title={`Fulfillment Volume by Day (${activeDataset?.name})`}
+            subtitle="Weekly cycle density matrix"
+          >
+            <ActivityHeatmap
+              activity={metricsA.dayOfWeekActivity}
+              currencySymbol={activeCurrency}
+            />
+          </Card>
+          <Card
+            title={`Fulfillment Volume by Day (${secondaryDataset?.name})`}
+            subtitle="Weekly cycle density matrix"
+          >
+            <ActivityHeatmap
+              activity={metricsB.dayOfWeekActivity}
+              currencySymbol={secondaryCurrency}
+            />
+          </Card>
+        </div>
+      ) : (
+        <Card
+          title="Fulfillment Volume by Day of Week"
+          subtitle="Staff warehouse and packing stations according to historical density"
+        >
+          <ActivityHeatmap
+            activity={metricsA.dayOfWeekActivity}
+            currencySymbol={activeCurrency}
+          />
+        </Card>
+      )}
 
-      {/* Two columns: Order Complexity Distribution & Geographic Hotspots */}
+      {/* Two columns: Order Complexity & Geographic Hotspots */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Order Complexity Distribution */}
         <Card
           title="Order Packing Complexity Distribution"
           subtitle="Proportion of single-item envelopes vs multi-item heavy boxes"
         >
           <div className="space-y-3.5 pt-2">
-            {metrics.complexityDistribution.map((b) => (
+            {metricsA.complexityDistribution.map((b) => (
               <div key={b.itemsCount}>
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <span className="font-medium text-zinc-300">{b.itemsCount}</span>
@@ -159,13 +190,12 @@ export const OperationsView: React.FC = () => {
           </div>
         </Card>
 
-        {/* Geographic Hotspots */}
         <Card
-          title="Top Destination Hubs (Cities)"
+          title={`Top Destination Hubs (${activeDataset?.name})`}
           subtitle="Top destination cities by delivery volume and revenue"
         >
           <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-            {metrics.geoHotspots.slice(0, 8).map((geo, idx) => (
+            {metricsA.geoHotspots.slice(0, 8).map((geo, idx) => (
               <div
                 key={geo.city}
                 className="flex items-center justify-between p-2.5 rounded-xl bg-obsidian-850 border border-obsidian-750 text-xs hover:border-purple-500/40 transition-colors"
@@ -198,7 +228,7 @@ export const OperationsView: React.FC = () => {
         subtitle="Flagged shipments, complex multi-item orders, or cancelled/refunded parcels"
       >
         <Table
-          data={metrics.triageOrders}
+          data={metricsA.triageOrders}
           columns={triageColumns}
           pageSize={10}
           searchPlaceholder="Search order number, customer, city..."

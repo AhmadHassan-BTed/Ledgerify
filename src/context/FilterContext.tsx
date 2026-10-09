@@ -12,7 +12,9 @@ interface FilterContextType {
   setCustomCurrency: (currency: Currency | null) => void;
   resetFilters: () => void;
   filteredOrders: NormalizedOrder[];
+  secondaryFilteredOrders: NormalizedOrder[];
   activeCurrency: string;
+  secondaryCurrency: string;
   availableMonths: string[];
 }
 
@@ -27,7 +29,7 @@ const initialFilters: FilterState = {
 const FilterContext = createContext<FilterContextType | null>(null);
 
 export const FilterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { activeDataset } = useData();
+  const { activeDataset, activeOrders, secondaryDataset, secondaryOrders, isCompareEnabled } = useData();
   const [filters, setFilters] = useState<FilterState>(initialFilters);
 
   const setSearchQuery = (searchQuery: string) => setFilters(prev => ({ ...prev, searchQuery }));
@@ -43,22 +45,19 @@ export const FilterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }));
 
   const availableMonths = useMemo(() => {
-    if (!activeDataset) return [];
     const months = new Set<string>();
-    for (const order of activeDataset.orders) {
+    for (const order of activeOrders) {
       if (order.month && order.month.length >= 7) {
         months.add(order.month);
       }
     }
     return Array.from(months).sort();
-  }, [activeDataset]);
+  }, [activeOrders]);
 
-  const filteredOrders = useMemo(() => {
-    if (!activeDataset) return [];
+  const applyFilters = (orders: NormalizedOrder[]) => {
+    let result = orders;
 
-    let result = activeDataset.orders;
-
-    // Search query filter (Order #, Customer Name, Email, Fragrances, City)
+    // Search query filter
     if (filters.searchQuery.trim()) {
       const q = filters.searchQuery.toLowerCase().trim();
       result = result.filter(o =>
@@ -87,9 +86,19 @@ export const FilterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     return result;
-  }, [activeDataset, filters.searchQuery, filters.selectedMonth, filters.status]);
+  };
+
+  const filteredOrders = useMemo(() => {
+    return applyFilters(activeOrders);
+  }, [activeOrders, filters.searchQuery, filters.selectedMonth, filters.status]);
+
+  const secondaryFilteredOrders = useMemo(() => {
+    if (!isCompareEnabled || !secondaryOrders) return [];
+    return applyFilters(secondaryOrders);
+  }, [secondaryOrders, isCompareEnabled, filters.searchQuery, filters.selectedMonth, filters.status]);
 
   const activeCurrency = filters.customCurrency || activeDataset?.currency || '£';
+  const secondaryCurrency = secondaryDataset?.currency || (activeCurrency === '£' ? '$' : '£');
 
   return (
     <FilterContext.Provider
@@ -102,7 +111,9 @@ export const FilterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setCustomCurrency,
         resetFilters,
         filteredOrders,
+        secondaryFilteredOrders,
         activeCurrency,
+        secondaryCurrency,
         availableMonths,
       }}
     >

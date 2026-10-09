@@ -22,10 +22,9 @@ interface TabItem {
 
 export const NavigationTabs: React.FC = () => {
   const { filters, setActiveTab } = useFilters();
-  const { activeDataset, datasets } = useData();
+  const { activeDataset, isCompareEnabled } = useData();
 
   const flaggedCount = activeDataset?.dataQuality.flaggedOrders.length || 0;
-  const canCompare = datasets.length >= 2;
 
   const tabs: TabItem[] = [
     {
@@ -66,8 +65,8 @@ export const NavigationTabs: React.FC = () => {
     },
     {
       id: 'compare',
-      label: 'Compare Datasets',
-      badge: canCompare ? 'Ready' : undefined,
+      label: 'Comparison Matrix',
+      badge: isCompareEnabled ? 'Active' : undefined,
       icon: <GitCompare className="w-4 h-4" />
     }
   ];

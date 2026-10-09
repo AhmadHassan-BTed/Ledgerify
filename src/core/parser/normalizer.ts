@@ -10,7 +10,7 @@ export function normalizeHeader(key: string): string {
 }
 
 /**
- * Header mapping dictionary matching common variations found in Shopify exports.
+ * Header mapping dictionary matching standard order column variations found in Shopify exports.
  */
 export const HEADER_MAPPINGS: Record<string, string[]> = {
   orderNumber: ['order', 'ordernumber', 'orderid', 'name', 'orderno'],
@@ -24,16 +24,6 @@ export const HEADER_MAPPINGS: Record<string, string[]> = {
   orderValue: ['ordervalue', 'total', 'ordertotal', 'value', 'subtotal', 'amount', 'totalspent'],
   status: ['status', 'financialstatus', 'orderstatus', 'paymentstatus'],
   date: ['date', 'createdat', 'orderdate', 'processedat', 'timestamp'],
-  hasTrio: ['hastrio', 'trio', 'trioset'],
-  hasDiscovery: ['hasdiscovery', 'discovery', 'discoveryset'],
-  trioQty: ['trioqty', 'trioquantity', 'triosetqty'],
-  trioAmount: ['trioamount', 'triovalue', 'triototal'],
-  discoveryQty: ['discoveryqty', 'discoveryquantity', 'discoverysetqty'],
-  discoveryAmount: ['discoveryamount', 'discoveryvalue', 'discoverytotal'],
-  qty50ml: ['50mlqty', '50mlquantity', 'qty50ml'],
-  amount50ml: ['50mlamount', '50mlvalue', 'amount50ml'],
-  qty100ml: ['100mlqty', '100mlquantity', 'qty100ml'],
-  amount100ml: ['100mlamount', '100mlvalue', 'amount100ml'],
 };
 
 /**
@@ -52,7 +42,52 @@ export function findMappedKey(row: Record<string, any>, targetField: keyof typeo
 }
 
 /**
- * Parses raw fragrance line items like "Visionary - 50ml; Silk Odyssey - 50ml"
+ * Dynamically discovers category columns from headers at runtime without hardcoding.
+ * Scans for "{Category} Qty" and "{Category} Amount" patterns.
+ */
+export function discoverCategoryColumns(headers: string[]): {
+  categories: string[];
+  qtyCols: Record<string, string>;
+  amountCols: Record<string, string>;
+} {
+  const qtyCols: Record<string, string> = {};
+  const amountCols: Record<string, string> = {};
+  const categoriesSet = new Set<string>();
+
+  for (const h of headers) {
+    const trimmed = h.trim();
+
+    // Check for quantity pattern: e.g. "Trio Qty", "Discovery Qty", "50ml Qty", "Sample Quantity"
+    const qtyMatch = trimmed.match(/^(.+?)\s*(?:Qty|Quantity)$/i);
+    if (qtyMatch && qtyMatch[1]) {
+      const catName = qtyMatch[1].trim();
+      categoriesSet.add(catName);
+      qtyCols[catName] = h;
+      continue;
+    }
+
+    // Check for amount pattern: e.g. "Trio Amount", "Discovery Amount", "50ml Amount", "100ml Value"
+    const amountMatch = trimmed.match(/^(.+?)\s*(?:Amount|Value|Total|Price)$/i);
+    if (amountMatch && amountMatch[1]) {
+      const catName = amountMatch[1].trim();
+      // Avoid matching master total "Order Value" or "Order Total"
+      if (!normalizeHeader(catName).includes('order') && !normalizeHeader(catName).includes('sub')) {
+        categoriesSet.add(catName);
+        amountCols[catName] = h;
+      }
+    }
+  }
+
+  return {
+    categories: Array.from(categoriesSet),
+    qtyCols,
+    amountCols
+  };
+}
+
+/**
+ * Dynamically parses raw fragrance line items like "Visionary - 50ml; Silk Odyssey - 100ml; Royal Oud - Deluxe Box"
+ * at runtime without hardcoded bottle sizes or names.
  */
 export function parseFragranceString(raw: string | null | undefined): ParsedFragranceItem[] {
   if (!raw || typeof raw !== 'string') return [];
@@ -61,26 +96,16 @@ export function parseFragranceString(raw: string | null | undefined): ParsedFrag
   const parts = raw.split(';').map(p => p.trim()).filter(Boolean);
 
   for (const part of parts) {
-    let size: ParsedFragranceItem['size'] = 'other';
-    let name = part;
-
-    const lower = part.toLowerCase();
-    if (lower.includes('50ml')) {
-      size = '50ml';
-      name = part.replace(/\s*-\s*50ml/i, '').trim();
-    } else if (lower.includes('100ml')) {
-      size = '100ml';
-      name = part.replace(/\s*-\s*100ml/i, '').trim();
-    } else if (lower.includes('trio')) {
-      size = 'trio';
-      name = part.replace(/\s*-\s*trio/i, '').trim();
-    } else if (lower.includes('discovery')) {
-      size = 'discovery';
-      name = part.replace(/\s*-\s*discovery/i, '').trim();
-    }
-
-    if (name.length > 0) {
-      items.push({ name, size, raw: part });
+    // Dynamic extraction: "<Name> - <Size/Format>" or "<Name> : <Size/Format>"
+    const match = part.match(/^(.+?)(?:\s*[-–—:]\s*(.+))?$/);
+    if (match) {
+      const name = (match[1] || '').trim();
+      const size = (match[2] || 'Standard').trim();
+      if (name.length > 0) {
+        items.push({ name, size, raw: part });
+      }
+    } else {
+      items.push({ name: part, size: 'Standard', raw: part });
     }
   }
 

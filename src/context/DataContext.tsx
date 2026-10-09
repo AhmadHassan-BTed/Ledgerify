@@ -1,13 +1,27 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Dataset } from '../types/order';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { Dataset, NormalizedOrder, SheetData } from '../../types/order';
 import { useServices } from './ServiceContext';
 
 interface DataContextType {
   datasets: Dataset[];
   activeDatasetId: string | null;
   activeDataset: Dataset | null;
+  activeOrders: NormalizedOrder[];
+  selectedSheet: string;
+  setSelectedSheet: (sheetName: string) => void;
+  availableSheets: string[];
+
+  // Compare Feature (Global toggleable capability)
+  isCompareEnabled: boolean;
+  setIsCompareEnabled: (enabled: boolean) => void;
+  toggleCompare: () => void;
   secondaryDatasetId: string | null;
   secondaryDataset: Dataset | null;
+  secondaryOrders: NormalizedOrder[];
+  secondarySelectedSheet: string;
+  setSecondarySelectedSheet: (sheetName: string) => void;
+  setSecondaryDatasetId: (id: string | null) => void;
+
   isLoading: boolean;
   loadingMessage: string;
   error: string | null;
@@ -15,7 +29,6 @@ interface DataContextType {
   loadSampleDataset: (type: 'UK' | 'US') => Promise<void>;
   loadBothAndCompare: () => Promise<void>;
   setActiveDatasetId: (id: string) => void;
-  setSecondaryDatasetId: (id: string | null) => void;
   removeDataset: (id: string) => Promise<void>;
   clearAllDatasets: () => Promise<void>;
 }
@@ -27,7 +40,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [activeDatasetId, setActiveDatasetId] = useState<string | null>(null);
+  const [selectedSheet, setSelectedSheet] = useState<string>('default');
+
+  // Compare Feature State
+  const [isCompareEnabled, setIsCompareEnabled] = useState<boolean>(false);
   const [secondaryDatasetId, setSecondaryDatasetId] = useState<string | null>(null);
+  const [secondarySelectedSheet, setSecondarySelectedSheet] = useState<string>('default');
+
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadingMessage, setLoadingMessage] = useState<string>('Initializing Ledgerify...');
   const [error, setError] = useState<string | null>(null);
@@ -44,8 +63,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (stored.length > 0 && mounted) {
           setDatasets(stored);
           setActiveDatasetId(stored[0].id);
+          setSelectedSheet(stored[0].selectedSheet || 'default');
           if (stored.length > 1) {
             setSecondaryDatasetId(stored[1].id);
+            setSecondarySelectedSheet(stored[1].selectedSheet || 'default');
           }
           setIsLoading(false);
           return;
@@ -59,6 +80,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (mounted) {
             setDatasets([ukSample]);
             setActiveDatasetId(ukSample.id);
+            setSelectedSheet(ukSample.selectedSheet);
             setIsLoading(false);
           }
         }
@@ -78,6 +100,72 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [storage, sampleDataLoader]);
 
+  const activeDataset = datasets.find(d => d.id === activeDatasetId) || datasets[0] || null;
+  const secondaryDataset = datasets.find(d => d.id === secondaryDatasetId) || (datasets.length > 1 ? datasets[1] : null);
+
+  // Available sheets for active dataset
+  const availableSheets = useMemo(() => {
+    if (!activeDataset) return [];
+    const list = Object.keys(activeDataset.sheets);
+    if (list.length > 1 && !list.includes('All Sheets (Combined)')) {
+      return ['All Sheets (Combined)', ...list];
+    }
+    return list;
+  }, [activeDataset]);
+
+  // Compute active orders based on selectedSheet
+  const activeOrders = useMemo(() => {
+    if (!activeDataset) return [];
+
+    if (selectedSheet === 'All Sheets (Combined)') {
+      // Merge unique orders from all ledger sheets
+      const seen = new Set<string>();
+      const combined: NormalizedOrder[] = [];
+      for (const s of Object.values(activeDataset.sheets)) {
+        for (const o of s.orders) {
+          if (!seen.has(o.orderNumber)) {
+            seen.add(o.orderNumber);
+            combined.push(o);
+          }
+        }
+      }
+      return combined;
+    }
+
+    const sheet = activeDataset.sheets[selectedSheet];
+    if (sheet && sheet.orders.length > 0) {
+      return sheet.orders;
+    }
+
+    return activeDataset.orders;
+  }, [activeDataset, selectedSheet]);
+
+  // Compute secondary orders based on secondarySelectedSheet
+  const secondaryOrders = useMemo(() => {
+    if (!secondaryDataset) return [];
+
+    if (secondarySelectedSheet === 'All Sheets (Combined)') {
+      const seen = new Set<string>();
+      const combined: NormalizedOrder[] = [];
+      for (const s of Object.values(secondaryDataset.sheets)) {
+        for (const o of s.orders) {
+          if (!seen.has(o.orderNumber)) {
+            seen.add(o.orderNumber);
+            combined.push(o);
+          }
+        }
+      }
+      return combined;
+    }
+
+    const sheet = secondaryDataset.sheets[secondarySelectedSheet];
+    if (sheet && sheet.orders.length > 0) {
+      return sheet.orders;
+    }
+
+    return secondaryDataset.orders;
+  }, [secondaryDataset, secondarySelectedSheet]);
+
   const uploadFile = async (file: File) => {
     try {
       setIsLoading(true);
@@ -93,6 +181,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return [dataset, ...filtered];
       });
       setActiveDatasetId(dataset.id);
+      setSelectedSheet(dataset.selectedSheet);
     } catch (err: any) {
       console.error('File parsing error:', err);
       setError(err.message || `Failed to parse ${file.name}`);
@@ -119,6 +208,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       setActiveDatasetId(dataset.id);
+      setSelectedSheet(dataset.selectedSheet);
     } catch (err: any) {
       console.error('Sample loading error:', err);
       setError(err.message || 'Failed to load sample dataset');
@@ -139,7 +229,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setDatasets([uk, us]);
       setActiveDatasetId(uk.id);
+      setSelectedSheet(uk.selectedSheet);
       setSecondaryDatasetId(us.id);
+      setSecondarySelectedSheet(us.selectedSheet);
+      setIsCompareEnabled(true);
     } catch (err: any) {
       console.error('Comparative loading error:', err);
       setError(err.message || 'Failed to load comparative datasets');
@@ -148,12 +241,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const toggleCompare = () => {
+    setIsCompareEnabled(prev => !prev);
+  };
+
   const removeDataset = async (id: string) => {
     await storage.deleteDataset(id);
     setDatasets(prev => {
       const remaining = prev.filter(d => d.id !== id);
       if (activeDatasetId === id) {
         setActiveDatasetId(remaining[0]?.id || null);
+        setSelectedSheet(remaining[0]?.selectedSheet || 'default');
       }
       if (secondaryDatasetId === id) {
         setSecondaryDatasetId(remaining[1]?.id || null);
@@ -167,10 +265,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDatasets([]);
     setActiveDatasetId(null);
     setSecondaryDatasetId(null);
+    setIsCompareEnabled(false);
   };
-
-  const activeDataset = datasets.find(d => d.id === activeDatasetId) || datasets[0] || null;
-  const secondaryDataset = datasets.find(d => d.id === secondaryDatasetId) || (datasets.length > 1 ? datasets[1] : null);
 
   return (
     <DataContext.Provider
@@ -178,8 +274,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         datasets,
         activeDatasetId,
         activeDataset,
+        activeOrders,
+        selectedSheet,
+        setSelectedSheet,
+        availableSheets,
+
+        isCompareEnabled,
+        setIsCompareEnabled,
+        toggleCompare,
         secondaryDatasetId,
         secondaryDataset,
+        secondaryOrders,
+        secondarySelectedSheet,
+        setSecondarySelectedSheet,
+        setSecondaryDatasetId,
+
         isLoading,
         loadingMessage,
         error,
@@ -187,7 +296,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loadSampleDataset,
         loadBothAndCompare,
         setActiveDatasetId,
-        setSecondaryDatasetId,
         removeDataset,
         clearAllDatasets,
       }}

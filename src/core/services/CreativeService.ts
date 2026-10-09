@@ -7,33 +7,47 @@ export class CreativeService {
       return this.getEmptyMetrics();
     }
 
-    const scentMap = new Map<string, { units: number; revenue: number }>();
-    let totalTrioQty = 0;
-    let totalBottleQty = 0;
+    const scentMap = new Map<string, { units: number }>();
+    let multiFormatQty = 0;
+    let singleFormatQty = 0;
+    let totalRevenue = 0;
+    let totalUnits = 0;
 
     for (const order of orders) {
-      totalTrioQty += order.trioQty;
-      totalBottleQty += (order.qty50ml + order.qty100ml);
+      totalRevenue += order.orderValue;
+      totalUnits += order.orderQuantity;
 
+      // Dynamically count multi-item sets vs single formats
+      for (const [catName, qty] of Object.entries(order.categoryQuantities)) {
+        const lower = catName.toLowerCase();
+        if (lower.includes('set') || lower.includes('trio') || lower.includes('box') || lower.includes('kit') || lower.includes('discovery') || lower.includes('bundle')) {
+          multiFormatQty += qty;
+        } else {
+          singleFormatQty += qty;
+        }
+      }
+
+      // Track individual scents
       for (const item of order.fragrancesParsed) {
         if (!item.name) continue;
-        const current = scentMap.get(item.name) || { units: 0, revenue: 0 };
+        const current = scentMap.get(item.name) || { units: 0 };
         current.units += 1;
-        current.revenue += item.size === '100ml' ? 22 : 16;
         scentMap.set(item.name, current);
       }
     }
+
+    const avgPrice = totalUnits > 0 ? (totalRevenue / totalUnits) : 25;
 
     // Sort scents by volume
     const sortedScents = Array.from(scentMap.entries()).sort((a, b) => b[1].units - a[1].units);
     const totalVolume = sortedScents.reduce((acc, curr) => acc + curr[1].units, 0) || 1;
 
     // Hero product
-    const heroEntry = sortedScents[0] || ['Visionary', { units: 1, revenue: 20 }];
+    const heroEntry = sortedScents[0] || ['Flagship Fragrance', { units: 1 }];
     const heroProduct = {
       name: heroEntry[0],
       unitsSold: heroEntry[1].units,
-      revenue: Math.round(heroEntry[1].revenue * 100) / 100,
+      revenue: Math.round(heroEntry[1].units * avgPrice * 100) / 100,
       sharePercentage: Math.round((heroEntry[1].units / totalVolume) * 100)
     };
 
@@ -47,7 +61,7 @@ export class CreativeService {
       {
         badge: '⚡ High Momentum',
         visualHook: 'Warm amber tones, floating mist particle effect, high-contrast typography.',
-        recommendedAsset: 'TikTok hook video featuring 100ml bottle uncapping macro shot.'
+        recommendedAsset: 'TikTok hook video featuring bottle uncapping macro shot.'
       },
       {
         badge: '💎 Cult Favorite',
@@ -62,20 +76,20 @@ export class CreativeService {
         rank: idx + 1,
         name: item[0],
         unitsSold: item[1].units,
-        revenue: Math.round(item[1].revenue * 100) / 100,
+        revenue: Math.round(item[1].units * avgPrice * 100) / 100,
         visualHook: template.visualHook,
         recommendedAsset: template.recommendedAsset,
         badge: template.badge
       };
     });
 
-    // Aesthetic trend (Trio vs Individual bottles)
-    const combined = (totalTrioQty + totalBottleQty) || 1;
-    const trioPercent = Math.round((totalTrioQty / combined) * 100);
+    // Dynamic Packaging format trend ratio
+    const combined = (multiFormatQty + singleFormatQty) || 1;
+    const trioPercent = Math.round((multiFormatQty / combined) * 100);
     const bottlePercent = 100 - trioPercent;
     const note = trioPercent > 20
-      ? 'Trio Sets represent over 20% of cart volume! Feature the 3-bottle gift box prominently in ad creatives.'
-      : 'Individual 100ml & 50ml bottles dominate cart choice. Focus creative assets on solitary flagship bottles.';
+      ? `Multi-item gift & discovery sets represent ${trioPercent}% of cart volume! Feature boxed packaging prominently in visual ads.`
+      : `Individual bottle formats represent ${bottlePercent}% of cart choice. Focus creative assets on solitary flagship bottles.`;
 
     // Word cloud weights (normalized 1 to 5)
     const maxUnits = sortedScents[0] ? sortedScents[0][1].units : 1;
