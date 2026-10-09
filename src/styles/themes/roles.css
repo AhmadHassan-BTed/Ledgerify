@@ -1,0 +1,129 @@
+/* ========================================================
+   ROLE THEME VARIABLES & COLOR SCHEMES
+   File: src/styles/themes/roles.css
+   Dynamic color palettes switching dynamically for each role!
+   ======================================================== */
+
+/* Executive (CEO): Prestigious Amber / Gold */
+:root, [data-role="executive"] {
+  --role-primary: #d97706;
+  --role-primary-hover: #b45309;
+  --role-accent: #f59e0b;
+  --role-light: #fef3c7;
+  --role-text: #92400e;
+  --role-rgb: 217, 119, 6;
+  --role-glow: rgba(245, 158, 11, 0.35);
+  --role-gradient: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+}
+
+/* Finance: Money & Ledger Emerald Green */
+[data-role="finance"] {
+  --role-primary: #059669;
+  --role-primary-hover: #047857;
+  --role-accent: #10b981;
+  --role-light: #d1fae5;
+  --role-text: #065f46;
+  --role-rgb: 5, 150, 105;
+  --role-glow: rgba(16, 185, 129, 0.35);
+  --role-gradient: linear-gradient(135deg, #059669 0%, #10b981 100%);
+}
+
+/* Inventory: Warehouse & Stock Electric Cyan */
+[data-role="inventory"] {
+  --role-primary: #0891b2;
+  --role-primary-hover: #0e7490;
+  --role-accent: #06b6d4;
+  --role-light: #cffafe;
+  --role-text: #155e75;
+  --role-rgb: 8, 145, 178;
+  --role-glow: rgba(6, 182, 212, 0.35);
+  --role-gradient: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
+}
+
+/* Operations: Fast Fulfillment Coral Orange */
+[data-role="operations"] {
+  --role-primary: #ea580c;
+  --role-primary-hover: #c2410c;
+  --role-accent: #f97316;
+  --role-light: #ffedd5;
+  --role-text: #9a3412;
+  --role-rgb: 234, 88, 12;
+  --role-glow: rgba(249, 115, 22, 0.35);
+  --role-gradient: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+}
+
+/* Marketing & SEO: Campaigns & Social Fuchsia / Pink */
+[data-role="marketing"] {
+  --role-primary: #db2777;
+  --role-primary-hover: #be185d;
+  --role-accent: #ec4899;
+  --role-light: #fce7f3;
+  --role-text: #9d174d;
+  --role-rgb: 219, 39, 119;
+  --role-glow: rgba(236, 72, 153, 0.35);
+  --role-gradient: linear-gradient(135deg, #db2777 0%, #ec4899 100%);
+}
+
+/* Creative & Visuals: Fragrances & Art Violet / Purple */
+[data-role="creative"] {
+  --role-primary: #7c3aed;
+  --role-primary-hover: #6d28d9;
+  --role-accent: #8b5cf6;
+  --role-light: #ede9fe;
+  --role-text: #5b21b6;
+  --role-rgb: 124, 58, 237;
+  --role-glow: rgba(139, 92, 246, 0.35);
+  --role-gradient: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+}
+
+/* Admin & Data Quality: Integrity Audits Ruby Red */
+[data-role="admin"] {
+  --role-primary: #e11d48;
+  --role-primary-hover: #be123c;
+  --role-accent: #f43f5e;
+  --role-light: #ffe4e6;
+  --role-text: #9f1239;
+  --role-rgb: 225, 29, 72;
+  --role-glow: rgba(244, 63, 94, 0.35);
+  --role-gradient: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
+}
+
+/* Comparison Matrix: Dual-Engine Electric Blue */
+[data-role="compare"] {
+  --role-primary: #2563eb;
+  --role-primary-hover: #1d4ed8;
+  --role-accent: #3b82f6;
+  --role-light: #dbeafe;
+  --role-text: #1e40af;
+  --role-rgb: 37, 99, 235;
+  --role-glow: rgba(59, 130, 246, 0.35);
+  --role-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+}
+
+/* ========================================================
+   ROLE UTILITY CLASSES
+   ======================================================== */
+.bg-role {
+  background-color: var(--role-primary) !important;
+}
+.hover\:bg-role-hover:hover {
+  background-color: var(--role-primary-hover) !important;
+}
+.text-role {
+  color: var(--role-accent) !important;
+}
+.border-role {
+  border-color: var(--role-primary) !important;
+}
+.shadow-role-glow {
+  box-shadow: 0 0 25px -4px rgba(var(--role-rgb), 0.4) !important;
+}
+.bg-role-subtle {
+  background-color: rgba(var(--role-rgb), 0.12) !important;
+}
+.border-role-subtle {
+  border-color: rgba(var(--role-rgb), 0.3) !important;
+}
+.text-role-contrast {
+  color: #ffffff !important;
+}

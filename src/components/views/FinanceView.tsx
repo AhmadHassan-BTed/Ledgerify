@@ -34,13 +34,13 @@ export const FinanceView: React.FC = () => {
       header: 'Order #',
       accessorKey: 'orderNumber',
       sortable: true,
-      className: 'font-mono text-purple-300 font-semibold'
+      className: 'font-mono text-role font-semibold'
     },
     {
       header: 'Date',
       accessorKey: 'date',
       sortable: true,
-      className: 'font-mono text-zinc-400'
+      className: 'font-mono text-slate-500 dark:text-zinc-400'
     },
     {
       header: 'Customer',
@@ -50,7 +50,7 @@ export const FinanceView: React.FC = () => {
     {
       header: 'Items Ordered',
       accessorKey: 'fragrancesRaw',
-      className: 'max-w-xs truncate text-zinc-400'
+      className: 'max-w-xs truncate text-slate-500 dark:text-zinc-400'
     },
     {
       header: 'Refund Status',
@@ -61,7 +61,7 @@ export const FinanceView: React.FC = () => {
       header: 'Order Value',
       accessorKey: 'orderValue',
       sortable: true,
-      className: 'font-mono font-bold text-rose-400',
+      className: 'font-mono font-bold text-rose-500 dark:text-rose-400',
       cell: (row) => `${activeCurrency}${row.orderValue.toFixed(2)}`
     }
   ];
@@ -72,17 +72,17 @@ export const FinanceView: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl sm:text-2xl font-extrabold text-zinc-100 tracking-tight">
-              Financial Treasury & Revenue Breakdown
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight">
+              Financial Treasury &amp; Revenue Breakdown
             </h2>
             {isCompareEnabled && secondaryDataset && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-950 text-purple-300 border border-purple-800/60">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-role-subtle text-role border border-role-subtle">
                 <GitCompare className="w-3.5 h-3.5" />
                 <span>Comparing: {activeDataset?.name} vs {secondaryDataset.name}</span>
               </span>
             )}
           </div>
-          <p className="text-xs text-zinc-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
             Cash flow accounting, dynamic product categories yield, average order value, and refund liabilities.
           </p>
         </div>
@@ -98,6 +98,7 @@ export const FinanceView: React.FC = () => {
           trend={isCompareEnabled && comparison ? comparison.revenueDeltaPercent : undefined}
           trendLabel="Revenue delta vs B"
           icon={<DollarSign className="w-4 h-4" />}
+          plainEnglishHint="The total gross sum of all completed orders paid into your store."
         />
         <KpiCard
           title="Average Order Value (AOV)"
@@ -106,18 +107,21 @@ export const FinanceView: React.FC = () => {
           trend={isCompareEnabled && comparison ? comparison.aovDeltaPercent : undefined}
           trendLabel="AOV delta vs B"
           icon={<CreditCard className="w-4 h-4" />}
+          plainEnglishHint="How much the typical customer spends per checkout (Total Sales ÷ Total Orders)."
         />
         <KpiCard
           title="Refund Liability"
           value={`${activeCurrency}${metricsA.totalRefundLiability.toFixed(2)}`}
           subValue={isCompareEnabled && metricsB ? `vs ${secondaryDataset?.name}: ${secondaryCurrency}${metricsB.totalRefundLiability.toFixed(2)}` : `${refundedOrders.length} chargebacks/refunds`}
           icon={<RotateCcw className="w-4 h-4" />}
+          plainEnglishHint="The total money paid back or refunded to customers due to returns or cancellations."
         />
         <KpiCard
           title="Refund Rate"
           value={`${metricsA.refundRate}%`}
           subValue={isCompareEnabled && metricsB ? `vs ${secondaryDataset?.name}: ${metricsB.refundRate}%` : "Share of total orders"}
           icon={<ShieldAlert className="w-4 h-4" />}
+          plainEnglishHint="The percentage of orders that experienced a full or partial refund."
         />
       </div>
 
@@ -204,7 +208,7 @@ export const FinanceView: React.FC = () => {
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h4 className="text-xs font-semibold text-purple-300 mb-2 uppercase tracking-wider">{activeDataset?.name} Format Yield</h4>
+              <h4 className="text-xs font-semibold text-role mb-2 uppercase tracking-wider">{activeDataset?.name} Format Yield</h4>
               <CategoryDonutChart
                 data={metricsA.categoryBreakdown}
                 centerLabel="A Total"
@@ -213,7 +217,7 @@ export const FinanceView: React.FC = () => {
               />
             </div>
             <div>
-              <h4 className="text-xs font-semibold text-cyan-300 mb-2 uppercase tracking-wider">{secondaryDataset?.name} Format Yield</h4>
+              <h4 className="text-xs font-semibold text-cyan-500 mb-2 uppercase tracking-wider">{secondaryDataset?.name} Format Yield</h4>
               <CategoryDonutChart
                 data={metricsB.categoryBreakdown}
                 centerLabel="B Total"
@@ -227,7 +231,7 @@ export const FinanceView: React.FC = () => {
 
       {/* Refund Liability Audit Table */}
       <Card
-        title="Refund & Cancellation Liabilities Audit"
+        title="Refund &amp; Cancellation Liabilities Audit"
         subtitle="Individual orders flagged as refunded or partially refunded in Shopify"
       >
         <Table

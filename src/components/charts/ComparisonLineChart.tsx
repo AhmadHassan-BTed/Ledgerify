@@ -9,6 +9,9 @@ import {
   Legend,
   CartesianGrid
 } from 'recharts';
+import { useTheme } from '../../context/ThemeContext';
+import { useFilters } from '../../context/FilterContext';
+import { ROLE_THEMES } from '../../styles/themes/roleThemes';
 
 interface ComparisonLineChartProps {
   data: {
@@ -29,20 +32,25 @@ export const ComparisonLineChart: React.FC<ComparisonLineChartProps> = ({
   currA = '£',
   currB = '$'
 }) => {
+  const { theme } = useTheme();
+  const { filters } = useFilters();
+  const isDark = theme === 'dark';
+  const roleTheme = ROLE_THEMES[filters.activeTab] || ROLE_THEMES.executive;
+
   return (
     <div className="w-full h-72">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#272732" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#272732' : '#e2e8f0'} vertical={false} />
           <XAxis
             dataKey="month"
-            stroke="#71717a"
+            stroke={isDark ? '#71717a' : '#64748b'}
             fontSize={11}
             tickLine={false}
-            axisLine={{ stroke: '#272732' }}
+            axisLine={{ stroke: isDark ? '#272732' : '#cbd5e1' }}
           />
           <YAxis
-            stroke="#71717a"
+            stroke={isDark ? '#71717a' : '#64748b'}
             fontSize={11}
             tickLine={false}
             axisLine={false}
@@ -50,12 +58,12 @@ export const ComparisonLineChart: React.FC<ComparisonLineChartProps> = ({
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#121217',
-              borderColor: '#323242',
+              backgroundColor: isDark ? '#121217' : '#ffffff',
+              borderColor: isDark ? '#323242' : '#e2e8f0',
               borderRadius: '12px',
               fontSize: '12px',
-              color: '#f4f4f5',
-              boxShadow: '0 8px 30px rgba(0,0,0,0.6)'
+              color: isDark ? '#f4f4f5' : '#0f172a',
+              boxShadow: isDark ? '0 8px 30px rgba(0,0,0,0.6)' : '0 8px 30px rgba(0,0,0,0.08)'
             }}
             formatter={(val: any, name: any) => {
               const prefix = name === nameA ? currA : currB;
@@ -70,10 +78,10 @@ export const ComparisonLineChart: React.FC<ComparisonLineChartProps> = ({
             type="monotone"
             dataKey="revenueA"
             name={nameA}
-            stroke="#a855f7"
+            stroke={roleTheme.primaryHex}
             strokeWidth={3}
-            dot={{ r: 4, fill: '#a855f7' }}
-            activeDot={{ r: 6, fill: '#c084fc' }}
+            dot={{ r: 4, fill: roleTheme.primaryHex }}
+            activeDot={{ r: 6, fill: roleTheme.accentHex }}
           />
           <Line
             type="monotone"

@@ -60,13 +60,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoadingMessage('Restoring saved ledger sessions...');
         const stored = await storage.getAllDatasets();
 
-        if (stored.length > 0 && mounted) {
-          setDatasets(stored);
-          setActiveDatasetId(stored[0].id);
-          setSelectedSheet(stored[0].selectedSheet || 'default');
-          if (stored.length > 1) {
-            setSecondaryDatasetId(stored[1].id);
-            setSecondarySelectedSheet(stored[1].selectedSheet || 'default');
+        // Check if stored datasets have sheets property, otherwise refresh
+        const validStored = stored.filter(d => d && d.id && Array.isArray(d.orders));
+
+        if (validStored.length > 0 && mounted) {
+          // Ensure every dataset has sheets structure
+          const sanitized = validStored.map(d => {
+            if (!d.sheets) {
+              const defSheetName = d.selectedSheet || 'Ledger';
+              d.sheets = {
+                [defSheetName]: {
+                  name: defSheetName,
+                  rowCount: d.orders?.length || 0,
+                  headers: [],
+                  orders: d.orders || [],
+                  isLedger: true
+                }
+              };
+            }
+            return d;
+          });
+
+          setDatasets(sanitized);
+          setActiveDatasetId(sanitized[0].id);
+          setSelectedSheet(sanitized[0].selectedSheet || Object.keys(sanitized[0].sheets)[0] || 'default');
+          if (sanitized.length > 1) {
+            setSecondaryDatasetId(sanitized[1].id);
+            setSecondarySelectedSheet(sanitized[1].selectedSheet || Object.keys(sanitized[1].sheets)[0] || 'default');
           }
           setIsLoading(false);
           return;
@@ -103,9 +123,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const activeDataset = datasets.find(d => d.id === activeDatasetId) || datasets[0] || null;
   const secondaryDataset = datasets.find(d => d.id === secondaryDatasetId) || (datasets.length > 1 ? datasets[1] : null);
 
-  // Available sheets for active dataset
+  // Available sheets for active dataset with robust null safety
   const availableSheets = useMemo(() => {
     if (!activeDataset) return [];
+    if (!activeDataset.sheets) {
+      return (activeDataset as any).availableSheets || [activeDataset.selectedSheet || 'Ledger'];
+    }
     const list = Object.keys(activeDataset.sheets);
     if (list.length > 1 && !list.includes('All Sheets (Combined)')) {
       return ['All Sheets (Combined)', ...list];
@@ -113,57 +136,66 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return list;
   }, [activeDataset]);
 
-  // Compute active orders based on selectedSheet
+  // Compute active orders based on selectedSheet with robust null safety
   const activeOrders = useMemo(() => {
     if (!activeDataset) return [];
+    if (!activeDataset.sheets) {
+      return activeDataset.orders || [];
+    }
 
     if (selectedSheet === 'All Sheets (Combined)') {
-      // Merge unique orders from all ledger sheets
       const seen = new Set<string>();
       const combined: NormalizedOrder[] = [];
       for (const s of Object.values(activeDataset.sheets) as SheetData[]) {
-        for (const o of s.orders) {
-          if (!seen.has(o.orderNumber)) {
-            seen.add(o.orderNumber);
-            combined.push(o);
+        if (s && Array.isArray(s.orders)) {
+          for (const o of s.orders) {
+            if (o && o.orderNumber && !seen.has(o.orderNumber)) {
+              seen.add(o.orderNumber);
+              combined.push(o);
+            }
           }
         }
       }
-      return combined;
+      return combined.length > 0 ? combined : activeDataset.orders || [];
     }
 
     const sheet = activeDataset.sheets[selectedSheet];
-    if (sheet && sheet.orders.length > 0) {
+    if (sheet && Array.isArray(sheet.orders) && sheet.orders.length > 0) {
       return sheet.orders;
     }
 
-    return activeDataset.orders;
+    return activeDataset.orders || [];
   }, [activeDataset, selectedSheet]);
 
-  // Compute secondary orders based on secondarySelectedSheet
+  // Compute secondary orders based on secondarySelectedSheet with robust null safety
   const secondaryOrders = useMemo(() => {
     if (!secondaryDataset) return [];
+    if (!secondaryDataset.sheets) {
+      return secondaryDataset.orders || [];
+    }
 
     if (secondarySelectedSheet === 'All Sheets (Combined)') {
       const seen = new Set<string>();
       const combined: NormalizedOrder[] = [];
       for (const s of Object.values(secondaryDataset.sheets) as SheetData[]) {
-        for (const o of s.orders) {
-          if (!seen.has(o.orderNumber)) {
-            seen.add(o.orderNumber);
-            combined.push(o);
+        if (s && Array.isArray(s.orders)) {
+          for (const o of s.orders) {
+            if (o && o.orderNumber && !seen.has(o.orderNumber)) {
+              seen.add(o.orderNumber);
+              combined.push(o);
+            }
           }
         }
       }
-      return combined;
+      return combined.length > 0 ? combined : secondaryDataset.orders || [];
     }
 
     const sheet = secondaryDataset.sheets[secondarySelectedSheet];
-    if (sheet && sheet.orders.length > 0) {
+    if (sheet && Array.isArray(sheet.orders) && sheet.orders.length > 0) {
       return sheet.orders;
     }
 
-    return secondaryDataset.orders;
+    return secondaryDataset.orders || [];
   }, [secondaryDataset, secondarySelectedSheet]);
 
   const uploadFile = async (file: File) => {

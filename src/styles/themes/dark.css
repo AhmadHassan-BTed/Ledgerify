@@ -1,0 +1,66 @@
+/* ========================================================
+   OBSIDIAN DARK THEME
+   File: src/styles/themes/dark.css
+   Pure dark mode tokens, backgrounds, borders & glassmorphism
+   ======================================================== */
+
+:root.dark, .dark {
+  --bg-app: #0d0d11;
+  --bg-surface: #131318;
+  --bg-card: rgba(19, 19, 24, 0.88);
+  --bg-card-hover: rgba(24, 24, 32, 0.95);
+  --bg-subtle: #181820;
+  --bg-input: #131318;
+  
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.14);
+  --border-hover: rgba(255, 255, 255, 0.22);
+  
+  --text-main: #f4f4f5;
+  --text-secondary: #e4e4e7;
+  --text-muted: #a1a1aa;
+  --text-dim: #71717a;
+  
+  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  
+  --chart-grid: #272732;
+  --chart-text: #71717a;
+  --chart-tooltip-bg: #121217;
+  --chart-tooltip-border: #323242;
+  --chart-tooltip-text: #f4f4f5;
+  
+  --gauge-inactive: #272732;
+  --scrollbar-track: #121217;
+  --scrollbar-thumb: #272733;
+  --scrollbar-thumb-hover: #3f3f50;
+}
+
+.dark body {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(var(--role-rgb, 139, 92, 246), 0.07) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(var(--role-rgb, 124, 58, 237), 0.04) 0px, transparent 50%);
+}
+
+.dark .theme-card {
+  background-color: var(--bg-card);
+  border-color: var(--border-subtle);
+  box-shadow: var(--card-shadow);
+  color: var(--text-main);
+}
+
+.dark .theme-surface {
+  background-color: var(--bg-surface);
+  border-color: var(--border-subtle);
+}
+
+.dark .theme-subtle {
+  background-color: var(--bg-subtle);
+}
+
+.dark .theme-input {
+  background-color: var(--bg-input);
+  border-color: var(--border-subtle);
+  color: var(--text-main);
+}

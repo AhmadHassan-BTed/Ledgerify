@@ -58,7 +58,7 @@ export const RadialGauge: React.FC<RadialGaugeProps> = ({
     <div className="flex flex-col items-center justify-center p-2 relative">
       <svg width={size} height={size * 0.72} viewBox={`0 0 ${size} ${size * 0.75}`}>
         <defs>
-          <filter id="purpleGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <filter id="roleGlow" x="-20%" y="-20%" width="140%" height="140%">
             <feGaussianBlur stdDeviation="3" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
@@ -71,11 +71,11 @@ export const RadialGauge: React.FC<RadialGaugeProps> = ({
             y1={t.y1}
             x2={t.x2}
             y2={t.y2}
-            stroke={t.isActive ? '#a855f7' : '#272732'}
+            stroke={t.isActive ? 'var(--role-primary)' : 'var(--gauge-inactive, #cbd5e1)'}
             strokeWidth={4.5}
             strokeLinecap="round"
             className="transition-colors duration-300"
-            filter={t.isActive ? 'url(#purpleGlow)' : undefined}
+            filter={t.isActive ? 'url(#roleGlow)' : undefined}
           />
         ))}
 
@@ -84,7 +84,7 @@ export const RadialGauge: React.FC<RadialGaugeProps> = ({
           x={cx}
           y={cy - 12}
           textAnchor="middle"
-          className="fill-zinc-100 font-extrabold text-2xl"
+          className="fill-slate-900 dark:fill-zinc-100 font-extrabold text-2xl"
           style={{ fontSize: '28px', fontWeight: 800 }}
         >
           {clampedPercent}%
@@ -93,7 +93,7 @@ export const RadialGauge: React.FC<RadialGaugeProps> = ({
           x={cx}
           y={cy + 8}
           textAnchor="middle"
-          className="fill-zinc-400 font-medium text-xs tracking-wider"
+          className="fill-slate-500 dark:fill-zinc-400 font-medium text-xs tracking-wider"
           style={{ fontSize: '11px' }}
         >
           {title.toUpperCase()}
@@ -101,18 +101,18 @@ export const RadialGauge: React.FC<RadialGaugeProps> = ({
       </svg>
 
       {subtitle && (
-        <p className="text-xs text-zinc-400 text-center -mt-2">{subtitle}</p>
+        <p className="text-xs text-slate-500 dark:text-zinc-400 text-center -mt-2">{subtitle}</p>
       )}
 
       {(currentValue || targetValue) && (
-        <div className="flex items-center justify-between w-full px-4 mt-3 pt-3 border-t border-obsidian-800 text-xs">
+        <div className="flex items-center justify-between w-full px-4 mt-3 pt-3 border-t border-slate-100 dark:border-obsidian-800 text-xs">
           <div>
-            <span className="text-zinc-500 block text-[10px] uppercase tracking-wider">Current</span>
-            <span className="font-semibold text-zinc-200">{currentValue || '-'}</span>
+            <span className="text-slate-400 dark:text-zinc-500 block text-[10px] uppercase tracking-wider">Current</span>
+            <span className="font-semibold text-slate-800 dark:text-zinc-200">{currentValue || '-'}</span>
           </div>
           <div className="text-right">
-            <span className="text-zinc-500 block text-[10px] uppercase tracking-wider">Target</span>
-            <span className="font-semibold text-purple-400">{targetValue || '-'}</span>
+            <span className="text-slate-400 dark:text-zinc-500 block text-[10px] uppercase tracking-wider">Target</span>
+            <span className="font-semibold text-role">{targetValue || '-'}</span>
           </div>
         </div>
       )}

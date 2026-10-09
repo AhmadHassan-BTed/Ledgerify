@@ -35,30 +35,30 @@ export const ExecutiveView: React.FC = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl sm:text-2xl font-extrabold text-zinc-100 tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-zinc-100 tracking-tight">
               Executive Growth Intelligence
             </h2>
             {isCompareEnabled && secondaryDataset && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-950 text-purple-300 border border-purple-800/60">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-role-subtle text-role border border-role-subtle">
                 <GitCompare className="w-3.5 h-3.5" />
                 <span>Comparing: {activeDataset?.name} vs {secondaryDataset.name}</span>
               </span>
             )}
           </div>
-          <p className="text-xs text-zinc-400 mt-1">
+          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">
             High-level business health, customer retention, and MoM expansion vectors for {activeDataset?.name || 'Current Ledger'}.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-obsidian-900 border border-obsidian-800 text-xs">
-          <Globe className="w-4 h-4 text-purple-400" />
-          <span className="text-zinc-300 font-medium">Top Market:</span>
-          <span className="font-bold text-zinc-100 font-mono">{metricsA.topMarketName}</span>
-          <span className="text-purple-400 text-[11px]">({metricsA.topMarketShare}%)</span>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white dark:bg-obsidian-900 border border-slate-200 dark:border-obsidian-800 text-xs shadow-sm">
+          <Globe className="w-4 h-4 text-role" />
+          <span className="text-slate-600 dark:text-zinc-300 font-medium">Top Market:</span>
+          <span className="font-bold text-slate-900 dark:text-zinc-100 font-mono">{metricsA.topMarketName}</span>
+          <span className="text-role text-[11px] font-bold">({metricsA.topMarketShare}%)</span>
         </div>
       </div>
 
-      {/* Top Level Big KPI Cards */}
+      {/* Top Level Big KPI Cards with Plain-English Hints */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           title="Total Net Revenue"
@@ -68,6 +68,7 @@ export const ExecutiveView: React.FC = () => {
           trendLabel={isCompareEnabled && metricsB ? `vs ${secondaryDataset?.name}: ${comparison?.revenueDeltaPercent}%` : "MoM revenue growth"}
           subValue={isCompareEnabled && metricsB ? `B: ${secondaryCurrency}${metricsB.totalRevenue.toLocaleString()}` : undefined}
           icon={<DollarSign className="w-4 h-4" />}
+          plainEnglishHint="The real money earned from sales after deducting returns and cancellations."
         />
         <KpiCard
           title="Customer Retention"
@@ -76,6 +77,7 @@ export const ExecutiveView: React.FC = () => {
           trendLabel={isCompareEnabled && metricsB ? `vs ${secondaryDataset?.name}: ${comparison?.retentionDeltaPercent}%` : "Repeat buyers"}
           subValue={isCompareEnabled && metricsB ? `B: ${metricsB.retentionRate}% (${metricsB.returningCustomers} buyers)` : `${metricsA.returningCustomers} repeat buyers`}
           icon={<Users className="w-4 h-4" />}
+          plainEnglishHint="The percentage of customers who came back to place 2 or more orders with your brand."
         />
         <KpiCard
           title="Order Volume"
@@ -84,12 +86,14 @@ export const ExecutiveView: React.FC = () => {
           trendLabel={isCompareEnabled && metricsB ? `vs ${secondaryDataset?.name}: ${comparison?.ordersDeltaPercent}%` : "MoM volume change"}
           subValue={isCompareEnabled && metricsB ? `B: ${secondaryFilteredOrders.length} orders` : undefined}
           icon={<TrendingUp className="w-4 h-4" />}
+          plainEnglishHint="The total count of orders successfully processed in this filtered timeframe."
         />
         <KpiCard
           title="Target Attainment"
           value={`${metricsA.targetProgressPercent}%`}
           subValue={isCompareEnabled && metricsB ? `B: ${metricsB.targetProgressPercent}% Pace` : `Target: ${activeCurrency}${metricsA.monthlyTarget.toLocaleString()}`}
           icon={<Target className="w-4 h-4" />}
+          plainEnglishHint="How close your actual revenue is to hitting your monthly sales target milestone."
         />
       </div>
 
@@ -103,12 +107,12 @@ export const ExecutiveView: React.FC = () => {
               action={
                 <div className="flex items-center gap-3 text-xs">
                   <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-                    <span className="text-zinc-300">{activeDataset?.name}</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-role" />
+                    <span className="text-slate-700 dark:text-zinc-300 font-medium">{activeDataset?.name}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                    <span className="text-zinc-300">{secondaryDataset?.name}</span>
+                    <span className="text-slate-700 dark:text-zinc-300 font-medium">{secondaryDataset?.name}</span>
                   </div>
                 </div>
               }
@@ -137,7 +141,7 @@ export const ExecutiveView: React.FC = () => {
                   size={190}
                 />
                 {metricsB && (
-                  <div className="pt-2 border-t border-obsidian-800">
+                  <div className="pt-2 border-t border-slate-100 dark:border-obsidian-800">
                     <RadialGauge
                       percent={metricsB.targetProgressPercent}
                       title={`${secondaryDataset?.name} Pace`}
@@ -215,29 +219,29 @@ export const ExecutiveView: React.FC = () => {
             <div className="space-y-4 pt-2">
               <div>
                 <div className="flex justify-between text-xs mb-1.5">
-                  <span className="font-semibold text-zinc-300">
+                  <span className="font-semibold text-slate-700 dark:text-zinc-300">
                     Primary Market ({metricsA.topMarketName})
                   </span>
-                  <span className="font-mono text-purple-400">
+                  <span className="font-mono text-role font-bold">
                     {activeCurrency}{metricsA.topMarketRevenue.toLocaleString()} ({metricsA.topMarketShare}%)
                   </span>
                 </div>
-                <div className="w-full h-3 rounded-full bg-obsidian-800 overflow-hidden border border-obsidian-750">
+                <div className="w-full h-3 rounded-full bg-slate-100 dark:bg-obsidian-800 overflow-hidden border border-slate-200 dark:border-obsidian-750">
                   <div
-                    className="h-full bg-gradient-to-r from-purple-600 to-purple-400 rounded-full"
+                    className="h-full bg-role rounded-full transition-all duration-500"
                     style={{ width: `${Math.min(100, metricsA.topMarketShare)}%` }}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-3">
-                <div className="p-3 rounded-xl bg-obsidian-850 border border-obsidian-750">
-                  <span className="text-[11px] text-zinc-400 block">Total Customers</span>
-                  <span className="text-lg font-bold text-zinc-100 font-mono">{metricsA.totalCustomers}</span>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-obsidian-850 border border-slate-200/70 dark:border-obsidian-750">
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400 block">Total Customers</span>
+                  <span className="text-lg font-bold text-slate-900 dark:text-zinc-100 font-mono">{metricsA.totalCustomers}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-obsidian-850 border border-obsidian-750">
-                  <span className="text-[11px] text-zinc-400 block">Repeat Rate</span>
-                  <span className="text-lg font-bold text-purple-400 font-mono">{metricsA.retentionRate}%</span>
+                <div className="p-3 rounded-xl bg-slate-50 dark:bg-obsidian-850 border border-slate-200/70 dark:border-obsidian-750">
+                  <span className="text-[11px] text-slate-500 dark:text-zinc-400 block">Repeat Rate</span>
+                  <span className="text-lg font-bold text-role font-mono">{metricsA.retentionRate}%</span>
                 </div>
               </div>
             </div>

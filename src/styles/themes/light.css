@@ -1,0 +1,66 @@
+/* ========================================================
+   CRYSTAL WHITE / SLATE LIGHT THEME
+   File: src/styles/themes/light.css
+   Clean, modern, high-contrast light mode tokens & aesthetics
+   ======================================================== */
+
+:root.light, .light, :root:not(.dark) {
+  --bg-app: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.96);
+  --bg-card-hover: #ffffff;
+  --bg-subtle: #f1f5f9;
+  --bg-input: #ffffff;
+  
+  --border-subtle: rgba(226, 232, 240, 0.95);
+  --border-medium: rgba(203, 213, 225, 1);
+  --border-hover: rgba(148, 163, 184, 0.7);
+  
+  --text-main: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+  
+  --card-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(15, 23, 42, 0.05);
+  
+  --chart-grid: #e2e8f0;
+  --chart-text: #64748b;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: #cbd5e1;
+  --chart-tooltip-text: #0f172a;
+  
+  --gauge-inactive: #e2e8f0;
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+  --scrollbar-thumb-hover: #94a3b8;
+}
+
+.light body, :root:not(.dark) body {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(var(--role-rgb, 139, 92, 246), 0.06) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(var(--role-rgb, 124, 58, 237), 0.03) 0px, transparent 50%);
+}
+
+.light .theme-card {
+  background-color: var(--bg-card);
+  border-color: var(--border-subtle);
+  box-shadow: var(--card-shadow);
+  color: var(--text-main);
+}
+
+.light .theme-surface {
+  background-color: var(--bg-surface);
+  border-color: var(--border-subtle);
+}
+
+.light .theme-subtle {
+  background-color: var(--bg-subtle);
+}
+
+.light .theme-input {
+  background-color: var(--bg-input);
+  border-color: var(--border-subtle);
+  color: var(--text-main);
+}

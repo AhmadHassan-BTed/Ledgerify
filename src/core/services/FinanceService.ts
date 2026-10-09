@@ -38,14 +38,16 @@ export class FinanceService {
       }
 
       // Dynamic category accumulation
-      for (const [catName, amount] of Object.entries(order.categoryAmounts)) {
-        const qty = order.categoryQuantities[catName] || 0;
+      const catAmounts = order.categoryAmounts || {};
+      const catQuantities = order.categoryQuantities || {};
+      for (const [catName, amount] of Object.entries(catAmounts)) {
+        const qty = catQuantities[catName] || 0;
         if (!categoryTotals.has(catName)) {
           categoryTotals.set(catName, { amount: 0, quantity: 0 });
         }
         const cData = categoryTotals.get(catName)!;
-        cData.amount += amount;
-        cData.quantity += qty;
+        cData.amount += (Number(amount) || 0);
+        cData.quantity += (Number(qty) || 0);
       }
 
       // Monthly aggregation
@@ -56,8 +58,8 @@ export class FinanceService {
       const mData = monthlyMap.get(mKey)!;
       mData.revenue += order.orderValue;
       mData.orders += 1;
-      for (const [catName, amount] of Object.entries(order.categoryAmounts)) {
-        mData.catAmounts[catName] = (mData.catAmounts[catName] || 0) + amount;
+      for (const [catName, amount] of Object.entries(catAmounts)) {
+        mData.catAmounts[catName] = (mData.catAmounts[catName] || 0) + (Number(amount) || 0);
       }
 
       // Daily aggregation

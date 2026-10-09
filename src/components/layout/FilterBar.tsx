@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, RotateCcw, Layers, Filter } from 'lucide-react';
+import { Search, RotateCcw, Layers } from 'lucide-react';
 import { useFilters } from '../../context/FilterContext';
 import { useData } from '../../context/DataContext';
 import { StatusFilter } from '../../types/filter';
@@ -32,22 +32,22 @@ export const FilterBar: React.FC = () => {
   ];
 
   return (
-    <div className="w-full bg-obsidian-900/60 border border-obsidian-800 rounded-2xl p-3 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 backdrop-blur-md">
+    <div className="w-full bg-white/95 dark:bg-obsidian-900/60 border border-slate-200/90 dark:border-obsidian-800 rounded-2xl p-3 sm:p-4 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 backdrop-blur-md shadow-sm transition-colors">
       {/* Search Input */}
-      <div className="relative flex-1 max-w-sm">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+      <div className="relative flex-1 max-w-md">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-500" />
         <input
           type="text"
           value={filters.searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Filter by Order #, Customer, Email, City or Scent..."
-          className="w-full pl-9 pr-3.5 py-1.5 text-xs bg-obsidian-850/80 border border-obsidian-750 rounded-xl text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-purple-500 transition-colors"
+          placeholder="Search any order #, customer, city, or scent..."
+          className="w-full pl-9 pr-3.5 py-2 text-xs bg-slate-100/90 dark:bg-obsidian-850/80 border border-slate-200 dark:border-obsidian-750 rounded-xl text-slate-800 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-role transition-colors"
         />
         {filters.searchQuery && (
           <button
             type="button"
             onClick={() => setSearchQuery('')}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 text-xs"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-zinc-500 dark:hover:text-zinc-300 text-xs"
           >
             ×
           </button>
@@ -58,13 +58,13 @@ export const FilterBar: React.FC = () => {
       <div className="flex flex-wrap items-center gap-2">
         {/* Dynamic Sheet / Page Selector */}
         {availableSheets.length > 0 && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-obsidian-850/90 border border-purple-800/40 rounded-xl text-xs">
-            <Layers className="w-3.5 h-3.5 text-purple-400" />
-            <span className="text-[11px] text-zinc-400 font-medium hidden sm:inline">Page:</span>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-role-subtle border border-role-subtle rounded-xl text-xs">
+            <Layers className="w-3.5 h-3.5 text-role" />
+            <span className="text-[11px] text-role font-semibold hidden sm:inline">Page:</span>
             <select
               value={selectedSheet}
               onChange={(e) => setSelectedSheet(e.target.value)}
-              className="bg-transparent text-xs text-purple-200 font-semibold focus:outline-none cursor-pointer max-w-[160px] truncate"
+              className="bg-transparent text-xs text-role font-bold focus:outline-none cursor-pointer max-w-[170px] truncate"
               title="Select specific sheet or page from the uploaded workbook"
             >
               {availableSheets.map(s => {
@@ -72,7 +72,7 @@ export const FilterBar: React.FC = () => {
                   ? activeDataset?.totalRows
                   : activeDataset?.sheets[s]?.rowCount;
                 return (
-                  <option key={s} value={s} className="bg-obsidian-900 text-zinc-200">
+                  <option key={s} value={s} className="bg-white dark:bg-obsidian-900 text-slate-900 dark:text-zinc-200">
                     {s} {count !== undefined ? `(${count})` : ''}
                   </option>
                 );
@@ -82,14 +82,14 @@ export const FilterBar: React.FC = () => {
         )}
 
         {/* Month Pills */}
-        <div className="flex items-center gap-1 p-0.5 bg-obsidian-850/80 border border-obsidian-750 rounded-xl text-xs">
+        <div className="flex items-center gap-1 p-0.5 bg-slate-100 dark:bg-obsidian-850/80 border border-slate-200 dark:border-obsidian-750 rounded-xl text-xs">
           <button
             type="button"
             onClick={() => setSelectedMonth('all')}
-            className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+            className={`px-3 py-1 rounded-lg text-[11px] font-medium transition-all ${
               filters.selectedMonth === 'all'
-                ? 'bg-purple-600 text-white shadow-sm'
-                : 'text-zinc-400 hover:text-zinc-200'
+                ? 'bg-role text-white shadow-sm font-semibold'
+                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
             }`}
           >
             All
@@ -108,10 +108,10 @@ export const FilterBar: React.FC = () => {
                 key={month}
                 type="button"
                 onClick={() => setSelectedMonth(month)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                className={`px-3 py-1 rounded-lg text-[11px] font-medium transition-all ${
                   isSelected
-                    ? 'bg-purple-600 text-white shadow-sm'
-                    : 'text-zinc-400 hover:text-zinc-200'
+                    ? 'bg-role text-white shadow-sm font-semibold'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
                 }`}
               >
                 {label}
@@ -121,7 +121,7 @@ export const FilterBar: React.FC = () => {
         </div>
 
         {/* Status Pills */}
-        <div className="flex items-center gap-1 p-0.5 bg-obsidian-850/80 border border-obsidian-750 rounded-xl text-xs">
+        <div className="flex items-center gap-1 p-0.5 bg-slate-100 dark:bg-obsidian-850/80 border border-slate-200 dark:border-obsidian-750 rounded-xl text-xs">
           {statuses.map((st) => {
             const isSelected = filters.status === st.id;
             return (
@@ -129,10 +129,10 @@ export const FilterBar: React.FC = () => {
                 key={st.id}
                 type="button"
                 onClick={() => setStatusFilter(st.id)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                className={`px-3 py-1 rounded-lg text-[11px] font-medium transition-all ${
                   isSelected
-                    ? 'bg-zinc-200 text-zinc-950 font-semibold shadow-sm'
-                    : 'text-zinc-400 hover:text-zinc-200'
+                    ? 'bg-role text-white font-bold shadow-sm'
+                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
                 }`}
               >
                 {st.label}
@@ -146,17 +146,17 @@ export const FilterBar: React.FC = () => {
           <button
             type="button"
             onClick={resetFilters}
-            className="p-1.5 text-zinc-400 hover:text-zinc-200 hover:bg-obsidian-800 rounded-lg border border-obsidian-700 transition-colors"
+            className="p-1.5 text-slate-500 hover:text-slate-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-obsidian-800 rounded-lg border border-slate-200 dark:border-obsidian-700 transition-colors"
             title="Reset filters"
           >
             <RotateCcw className="w-3.5 h-3.5" />
           </button>
         )}
 
-        <div className="text-[11px] font-mono text-zinc-400 pl-1">
+        <div className="text-[11px] font-mono text-slate-500 dark:text-zinc-400 pl-1 font-semibold">
           {filteredOrders.length} orders
           {isCompareEnabled && secondaryFilteredOrders.length > 0 && (
-            <span className="text-cyan-400 ml-1">vs {secondaryFilteredOrders.length}</span>
+            <span className="text-cyan-600 dark:text-cyan-400 ml-1">vs {secondaryFilteredOrders.length}</span>
           )}
         </div>
       </div>

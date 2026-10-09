@@ -10,21 +10,41 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({
   activity,
   currencySymbol = '£'
 }) => {
-  // Color scale for intensity
-  const getBlockColor = (intensity: number) => {
+  const getBlockStyle = (intensity: number) => {
     switch (intensity) {
       case 0:
-        return 'bg-obsidian-800 border-obsidian-700/60 text-zinc-500';
+        return {
+          backgroundColor: 'rgba(var(--role-rgb), 0.06)',
+          borderColor: 'rgba(var(--role-rgb), 0.12)',
+        };
       case 1:
-        return 'bg-purple-950/60 border-purple-800/40 text-purple-300';
+        return {
+          backgroundColor: 'rgba(var(--role-rgb), 0.22)',
+          borderColor: 'rgba(var(--role-rgb), 0.32)',
+          color: '#ffffff'
+        };
       case 2:
-        return 'bg-purple-800/70 border-purple-600/50 text-purple-200';
+        return {
+          backgroundColor: 'rgba(var(--role-rgb), 0.45)',
+          borderColor: 'rgba(var(--role-rgb), 0.55)',
+          color: '#ffffff'
+        };
       case 3:
-        return 'bg-purple-600 border-purple-400/60 text-white shadow-sm';
+        return {
+          backgroundColor: 'rgba(var(--role-rgb), 0.75)',
+          borderColor: 'rgba(var(--role-rgb), 0.85)',
+          color: '#ffffff'
+        };
       case 4:
-        return 'bg-purple-500 border-purple-300 text-white shadow-glow-subtle font-bold';
+        return {
+          backgroundColor: 'var(--role-primary)',
+          borderColor: 'var(--role-accent)',
+          boxShadow: '0 0 15px -2px rgba(var(--role-rgb), 0.5)',
+          color: '#ffffff',
+          fontWeight: 700
+        };
       default:
-        return 'bg-obsidian-800 border-obsidian-700 text-zinc-400';
+        return {};
     }
   };
 
@@ -33,13 +53,12 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({
       <div className="grid grid-cols-7 gap-2.5 sm:gap-3">
         {activity.map((item) => (
           <div key={item.dayName} className="flex flex-col items-center group">
-            <span className="text-[11px] font-medium text-zinc-400 mb-2">
+            <span className="text-[11px] font-medium text-slate-500 dark:text-zinc-400 mb-2">
               {item.dayName.substring(0, 3)}
             </span>
             <div
-              className={`w-full aspect-square rounded-xl border flex flex-col items-center justify-center p-1 transition-all duration-200 group-hover:scale-105 group-hover:border-purple-400/80 cursor-pointer ${getBlockColor(
-                item.intensityScore
-              )}`}
+              style={getBlockStyle(item.intensityScore)}
+              className="w-full aspect-square rounded-xl border flex flex-col items-center justify-center p-1 transition-all duration-200 group-hover:scale-105 cursor-pointer text-slate-700 dark:text-zinc-200"
               title={`${item.dayName}: ${item.orderCount} orders (${currencySymbol}${item.revenue})`}
             >
               <span className="text-sm font-semibold tracking-tight leading-none">
@@ -49,23 +68,23 @@ export const ActivityHeatmap: React.FC<ActivityHeatmapProps> = ({
                 orders
               </span>
             </div>
-            <span className="text-[10px] text-zinc-500 mt-1.5 font-mono">
+            <span className="text-[10px] text-slate-400 dark:text-zinc-500 mt-1.5 font-mono">
               {currencySymbol}{Math.round(item.revenue / 1000)}k
             </span>
           </div>
         ))}
       </div>
 
-      <div className="flex items-center justify-between mt-4 pt-3 border-t border-obsidian-800 text-[11px] text-zinc-400">
+      <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 dark:border-obsidian-800 text-[11px] text-slate-500 dark:text-zinc-400">
         <span>Order Volume Density</span>
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] text-zinc-500">Less</span>
-          <div className="w-3 h-3 rounded bg-obsidian-800 border border-obsidian-700" />
-          <div className="w-3 h-3 rounded bg-purple-950/80 border border-purple-800/50" />
-          <div className="w-3 h-3 rounded bg-purple-800 border border-purple-600" />
-          <div className="w-3 h-3 rounded bg-purple-600 border border-purple-400" />
-          <div className="w-3 h-3 rounded bg-purple-500 border border-purple-300" />
-          <span className="text-[10px] text-zinc-500">More</span>
+          <span className="text-[10px]">Less</span>
+          <div className="w-3 h-3 rounded border" style={{ backgroundColor: 'rgba(var(--role-rgb), 0.06)', borderColor: 'rgba(var(--role-rgb), 0.12)' }} />
+          <div className="w-3 h-3 rounded border" style={{ backgroundColor: 'rgba(var(--role-rgb), 0.22)', borderColor: 'rgba(var(--role-rgb), 0.32)' }} />
+          <div className="w-3 h-3 rounded border" style={{ backgroundColor: 'rgba(var(--role-rgb), 0.45)', borderColor: 'rgba(var(--role-rgb), 0.55)' }} />
+          <div className="w-3 h-3 rounded border" style={{ backgroundColor: 'rgba(var(--role-rgb), 0.75)', borderColor: 'rgba(var(--role-rgb), 0.85)' }} />
+          <div className="w-3 h-3 rounded border" style={{ backgroundColor: 'var(--role-primary)', borderColor: 'var(--role-accent)' }} />
+          <span className="text-[10px]">More</span>
         </div>
       </div>
     </div>

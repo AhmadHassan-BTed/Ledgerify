@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -7,6 +8,13 @@ export default {
   theme: {
     extend: {
       colors: {
+        role: {
+          DEFAULT: 'var(--role-primary)',
+          hover: 'var(--role-primary-hover)',
+          accent: 'var(--role-accent)',
+          light: 'var(--role-light)',
+          text: 'var(--role-text)',
+        },
         obsidian: {
           950: '#09090b',
           900: '#0e0e12',
@@ -32,6 +40,8 @@ export default {
       boxShadow: {
         'glow-purple': '0 0 25px -5px rgba(139, 92, 246, 0.35)',
         'glow-subtle': '0 0 20px -5px rgba(139, 92, 246, 0.15)',
+        'role-glow': '0 0 25px -5px rgba(var(--role-rgb), 0.35)',
+        'role-subtle': '0 0 20px -5px rgba(var(--role-rgb), 0.15)',
         'obsidian-card': '0 4px 20px -2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05)',
       }
     },

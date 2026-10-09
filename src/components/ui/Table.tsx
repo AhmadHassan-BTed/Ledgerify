@@ -110,7 +110,7 @@ export function Table<T extends Record<string, any>>({
       {/* Controls Bar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-zinc-500" />
           <input
             type="text"
             value={searchTerm}
@@ -119,7 +119,7 @@ export function Table<T extends Record<string, any>>({
               setCurrentPage(1);
             }}
             placeholder={searchPlaceholder}
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-obsidian-850 border border-obsidian-700/80 rounded-xl text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-purple-500 transition-colors"
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-obsidian-850 border border-slate-200 dark:border-obsidian-700/80 rounded-xl text-slate-900 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-role transition-colors"
           />
         </div>
 
@@ -128,41 +128,41 @@ export function Table<T extends Record<string, any>>({
           <button
             type="button"
             onClick={handleExportCSV}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-obsidian-800 hover:bg-obsidian-750 text-zinc-300 border border-obsidian-700 rounded-xl transition-colors"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200/80 dark:bg-obsidian-800 dark:hover:bg-obsidian-750 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-obsidian-700 rounded-xl transition-colors"
           >
-            <Download className="w-3.5 h-3.5 text-purple-400" />
+            <Download className="w-3.5 h-3.5 text-role" />
             <span>Export CSV</span>
           </button>
         </div>
       </div>
 
       {/* Table Container */}
-      <div className="overflow-x-auto rounded-xl border border-obsidian-700/60 bg-obsidian-900/60">
+      <div className="overflow-x-auto rounded-xl border border-slate-200/90 dark:border-obsidian-700/60 bg-white dark:bg-obsidian-900/60 shadow-sm">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
-            <tr className="border-b border-obsidian-750 bg-obsidian-850/70 text-zinc-400">
+            <tr className="border-b border-slate-200 dark:border-obsidian-750 bg-slate-50 dark:bg-obsidian-850/70 text-slate-600 dark:text-zinc-400">
               {columns.map((col, idx) => (
                 <th
                   key={idx}
                   className={`py-3 px-4 font-semibold select-none ${col.className || ''} ${
-                    col.sortable ? 'cursor-pointer hover:text-zinc-200' : ''
+                    col.sortable ? 'cursor-pointer hover:text-slate-900 dark:hover:text-zinc-200' : ''
                   }`}
                   onClick={() => col.sortable && handleSort(col.accessorKey as string)}
                 >
                   <div className="inline-flex items-center gap-1.5">
                     <span>{col.header}</span>
                     {col.sortable && sortKey === col.accessorKey && (
-                      sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-purple-400" /> : <ChevronDown className="w-3.5 h-3.5 text-purple-400" />
+                      sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-role" /> : <ChevronDown className="w-3.5 h-3.5 text-role" />
                     )}
                   </div>
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-obsidian-800/60 text-zinc-300">
+          <tbody className="divide-y divide-slate-100 dark:divide-obsidian-800/60 text-slate-800 dark:text-zinc-300">
             {paginatedData.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="text-center py-10 text-zinc-500">
+                <td colSpan={columns.length} className="text-center py-10 text-slate-400 dark:text-zinc-500">
                   {emptyMessage}
                 </td>
               </tr>
@@ -170,7 +170,7 @@ export function Table<T extends Record<string, any>>({
               paginatedData.map((row, rIdx) => (
                 <tr
                   key={rIdx}
-                  className="hover:bg-obsidian-800/40 transition-colors"
+                  className="hover:bg-slate-50/80 dark:hover:bg-obsidian-800/40 transition-colors"
                 >
                   {columns.map((col, cIdx) => (
                     <td key={cIdx} className={`py-3 px-4 ${col.className || ''}`}>
@@ -189,7 +189,7 @@ export function Table<T extends Record<string, any>>({
       </div>
 
       {/* Pagination Footer */}
-      <div className="flex items-center justify-between mt-3 text-xs text-zinc-400 px-1">
+      <div className="flex items-center justify-between mt-3 text-xs text-slate-500 dark:text-zinc-400 px-1">
         <div>
           Showing {sortedData.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} to{' '}
           {Math.min(currentPage * pageSize, sortedData.length)} of {sortedData.length} records
@@ -200,7 +200,7 @@ export function Table<T extends Record<string, any>>({
             type="button"
             disabled={currentPage <= 1}
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-            className="p-1.5 rounded-lg border border-obsidian-700 bg-obsidian-850 hover:bg-obsidian-800 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-obsidian-700 bg-slate-100 hover:bg-slate-200 dark:bg-obsidian-850 dark:hover:bg-obsidian-800 text-slate-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -211,7 +211,7 @@ export function Table<T extends Record<string, any>>({
             type="button"
             disabled={currentPage >= totalPages}
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-            className="p-1.5 rounded-lg border border-obsidian-700 bg-obsidian-850 hover:bg-obsidian-800 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-1.5 rounded-lg border border-slate-200 dark:border-obsidian-700 bg-slate-100 hover:bg-slate-200 dark:bg-obsidian-850 dark:hover:bg-obsidian-800 text-slate-700 dark:text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ChevronRight className="w-4 h-4" />
           </button>

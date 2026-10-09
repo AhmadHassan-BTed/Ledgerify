@@ -18,7 +18,8 @@ export class CreativeService {
       totalUnits += order.orderQuantity;
 
       // Dynamically count multi-item sets vs single formats
-      for (const [catName, qty] of Object.entries(order.categoryQuantities)) {
+      const catQuantities = order.categoryQuantities || {};
+      for (const [catName, qty] of Object.entries(catQuantities)) {
         const lower = catName.toLowerCase();
         if (lower.includes('set') || lower.includes('trio') || lower.includes('box') || lower.includes('kit') || lower.includes('discovery') || lower.includes('bundle')) {
           multiFormatQty += qty;
@@ -28,7 +29,7 @@ export class CreativeService {
       }
 
       // Track individual scents
-      for (const item of order.fragrancesParsed) {
+      for (const item of (order.fragrancesParsed || [])) {
         if (!item.name) continue;
         const current = scentMap.get(item.name) || { units: 0 };
         current.units += 1;

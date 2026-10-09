@@ -1,5 +1,5 @@
-import React from 'react';
-import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
+import React, { useState } from 'react';
+import { ArrowUpRight, ArrowDownRight, Minus, HelpCircle } from 'lucide-react';
 
 interface KpiCardProps {
   title: string;
@@ -10,7 +10,7 @@ interface KpiCardProps {
   icon?: React.ReactNode;
   currencyPrefix?: string;
   className?: string;
-  accentColor?: string;
+  plainEnglishHint?: string; // Friendly explainer for non-technical users
 }
 
 export const KpiCard: React.FC<KpiCardProps> = ({
@@ -22,30 +22,54 @@ export const KpiCard: React.FC<KpiCardProps> = ({
   icon,
   currencyPrefix = '',
   className = '',
+  plainEnglishHint
 }) => {
+  const [showHint, setShowHint] = useState(false);
   const isPositive = trend !== undefined && trend > 0;
   const isNegative = trend !== undefined && trend < 0;
 
   return (
     <div
-      className={`relative overflow-hidden bg-obsidian-900/90 backdrop-blur-xl border border-obsidian-700/60 rounded-2xl p-5 transition-all duration-200 hover:border-obsidian-600/80 shadow-obsidian-card group ${className}`}
+      className={`relative overflow-hidden bg-white dark:bg-obsidian-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-obsidian-700/60 rounded-2xl p-5 sm:p-6 transition-all duration-200 hover:border-slate-300 dark:hover:border-obsidian-600/80 shadow-sm dark:shadow-obsidian-card group ${className}`}
     >
-      {/* Subtle background glow */}
-      <div className="absolute -right-8 -top-8 w-24 h-24 bg-purple-600/10 rounded-full blur-2xl pointer-events-none group-hover:bg-purple-600/15 transition-all" />
+      {/* Subtle dynamic background role glow */}
+      <div
+        className="absolute -right-8 -top-8 w-28 h-28 rounded-full blur-2xl pointer-events-none transition-all duration-300 opacity-60 group-hover:opacity-100"
+        style={{ backgroundColor: 'rgba(var(--role-rgb), 0.15)' }}
+      />
 
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wider text-zinc-400">
-          {title}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+            {title}
+          </span>
+          {plainEnglishHint && (
+            <button
+              type="button"
+              onClick={() => setShowHint(prev => !prev)}
+              className="text-slate-400 hover:text-role dark:text-zinc-500 dark:hover:text-role transition-colors"
+              title="Click for simple non-technical explanation"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
         {icon && (
-          <div className="w-8 h-8 rounded-xl bg-obsidian-800 border border-obsidian-700/50 flex items-center justify-center text-purple-400 group-hover:text-purple-300 group-hover:border-purple-500/40 transition-colors">
+          <div className="w-8 h-8 rounded-xl bg-role-subtle border border-role-subtle flex items-center justify-center text-role group-hover:scale-105 transition-all">
             {icon}
           </div>
         )}
       </div>
 
+      {/* Non-technical friendly hint callout */}
+      {showHint && plainEnglishHint && (
+        <div className="mt-2.5 p-2.5 rounded-xl bg-role-subtle border border-role-subtle text-[11px] text-slate-800 dark:text-zinc-200 animate-fade-in leading-relaxed">
+          <span className="font-semibold text-role">💡 Plain English:</span> {plainEnglishHint}
+        </div>
+      )}
+
       <div className="mt-3 flex items-baseline gap-2">
-        <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-50 font-sans">
+        <div className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-zinc-50 font-sans">
           {currencyPrefix}{typeof value === 'number' ? value.toLocaleString() : value}
         </div>
       </div>
@@ -55,10 +79,10 @@ export const KpiCard: React.FC<KpiCardProps> = ({
           <span
             className={`inline-flex items-center gap-0.5 px-2 py-0.5 text-xs font-semibold rounded-full border ${
               isPositive
-                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-400'
                 : isNegative
-                ? 'bg-rose-500/10 border-rose-500/30 text-rose-400'
-                : 'bg-zinc-800/80 border-zinc-700 text-zinc-400'
+                ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:border-rose-500/30 dark:text-rose-400'
+                : 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-zinc-800/80 dark:border-zinc-700 dark:text-zinc-400'
             }`}
           >
             {isPositive && <ArrowUpRight className="w-3.5 h-3.5" />}
@@ -68,7 +92,7 @@ export const KpiCard: React.FC<KpiCardProps> = ({
           </span>
         )}
 
-        <span className="text-xs text-zinc-400 truncate">
+        <span className="text-xs text-slate-500 dark:text-zinc-400 truncate">
           {subValue || trendLabel}
         </span>
       </div>

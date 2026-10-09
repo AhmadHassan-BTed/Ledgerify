@@ -35,7 +35,7 @@ export class InventoryService {
       totalRevenue += order.orderValue;
 
       // Dynamic line item parsing
-      for (const item of order.fragrancesParsed) {
+      for (const item of (order.fragrancesParsed || [])) {
         const name = item.name;
         if (!name) continue;
 

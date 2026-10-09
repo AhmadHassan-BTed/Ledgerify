@@ -12,6 +12,7 @@ import {
 import { ViewTab } from '../../types/filter';
 import { useFilters } from '../../context/FilterContext';
 import { useData } from '../../context/DataContext';
+import { ROLE_THEMES } from '../../styles/themes/roleThemes';
 
 interface TabItem {
   id: ViewTab;
@@ -72,32 +73,52 @@ export const NavigationTabs: React.FC = () => {
   ];
 
   return (
-    <div className="w-full overflow-x-auto pb-2 scrollbar-none">
-      <div className="inline-flex items-center gap-1.5 p-1.5 bg-obsidian-900/90 border border-obsidian-700/60 rounded-2xl backdrop-blur-xl">
+    <div className="w-full overflow-x-auto pb-1 scrollbar-none">
+      <div className="inline-flex items-center gap-1.5 p-1.5 bg-white/95 dark:bg-obsidian-900/90 border border-slate-200/90 dark:border-obsidian-700/60 rounded-2xl backdrop-blur-xl shadow-sm">
         {tabs.map((tab) => {
           const isActive = filters.activeTab === tab.id;
+          const roleTheme = ROLE_THEMES[tab.id];
+
           return (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`relative inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium transition-all duration-200 select-none whitespace-nowrap ${
+              style={
                 isActive
-                  ? 'bg-zinc-100 text-zinc-950 font-semibold shadow-md'
-                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-obsidian-800/60'
+                  ? {
+                      backgroundColor: roleTheme.primaryHex,
+                      color: '#ffffff',
+                      boxShadow: `0 0 20px -3px rgba(${roleTheme.rgb}, 0.5)`
+                    }
+                  : undefined
+              }
+              className={`relative inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 select-none whitespace-nowrap ${
+                isActive
+                  ? 'font-bold'
+                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-100 dark:hover:bg-obsidian-800/60'
               }`}
             >
-              <span className={isActive ? 'text-zinc-950' : 'text-zinc-400'}>
+              {/* Subtle role color indicator dot on inactive tab */}
+              {!isActive && (
+                <span
+                  className="w-1.5 h-1.5 rounded-full transition-transform group-hover:scale-125"
+                  style={{ backgroundColor: roleTheme.accentHex }}
+                />
+              )}
+
+              <span className={isActive ? 'text-white' : 'text-slate-500 dark:text-zinc-400'}>
                 {tab.icon}
               </span>
+
               <span>{tab.label}</span>
 
               {tab.badge && (
                 <span
                   className={`px-1.5 py-0.2 text-[10px] rounded-full font-bold uppercase tracking-wider ${
                     isActive
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-obsidian-800 text-purple-400 border border-purple-500/30'
+                      ? 'bg-black/25 text-white border border-white/20'
+                      : 'bg-slate-100 dark:bg-obsidian-800 text-slate-700 dark:text-zinc-300 border border-slate-200 dark:border-obsidian-700'
                   }`}
                 >
                   {tab.badge}

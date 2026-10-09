@@ -43,7 +43,7 @@ export class OperationsService {
       else complexityBuckets.bulk++;
 
       // Triage candidates: refunded, partially refunded, cancelled, or high quantity
-      if (order.isRefunded || order.isPartiallyRefunded || order.isCancelled || order.orderQuantity >= 6 || order.flags.length > 0) {
+      if (order.isRefunded || order.isPartiallyRefunded || order.isCancelled || order.orderQuantity >= 6 || (order.flags || []).length > 0) {
         triageOrders.push(order);
       }
     }

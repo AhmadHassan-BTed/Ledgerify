@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -10,6 +10,18 @@ import {
   CartesianGrid
 } from 'recharts';
 import { StackedMonthlyCategoryItem } from '../../types/analytics';
+import { useTheme } from '../../context/ThemeContext';
+
+const DYNAMIC_BAR_PALETTE = [
+  '#8b5cf6', // Violet
+  '#06b6d4', // Cyan
+  '#f59e0b', // Amber
+  '#ec4899', // Pink
+  '#10b981', // Emerald
+  '#6366f1', // Indigo
+  '#f97316', // Orange
+  '#3b82f6', // Blue
+];
 
 interface CategoryStackedBarChartProps {
   data: StackedMonthlyCategoryItem[];
@@ -20,20 +32,36 @@ export const CategoryStackedBarChart: React.FC<CategoryStackedBarChartProps> = (
   data,
   currencySymbol = '£'
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  // Dynamically extract all discovered category keys from data
+  const dynamicKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const item of data) {
+      for (const k of Object.keys(item)) {
+        if (k !== 'month' && k !== 'total') {
+          keys.add(k);
+        }
+      }
+    }
+    return Array.from(keys);
+  }, [data]);
+
   return (
     <div className="w-full h-64 sm:h-72">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#272732" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#272732' : '#e2e8f0'} vertical={false} />
           <XAxis
             dataKey="month"
-            stroke="#71717a"
+            stroke={isDark ? '#71717a' : '#64748b'}
             fontSize={11}
             tickLine={false}
-            axisLine={{ stroke: '#272732' }}
+            axisLine={{ stroke: isDark ? '#272732' : '#cbd5e1' }}
           />
           <YAxis
-            stroke="#71717a"
+            stroke={isDark ? '#71717a' : '#64748b'}
             fontSize={11}
             tickLine={false}
             axisLine={false}
@@ -41,12 +69,12 @@ export const CategoryStackedBarChart: React.FC<CategoryStackedBarChartProps> = (
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: '#121217',
-              borderColor: '#323242',
+              backgroundColor: isDark ? '#121217' : '#ffffff',
+              borderColor: isDark ? '#323242' : '#e2e8f0',
               borderRadius: '12px',
               fontSize: '12px',
-              color: '#f4f4f5',
-              boxShadow: '0 8px 30px rgba(0,0,0,0.6)'
+              color: isDark ? '#f4f4f5' : '#0f172a',
+              boxShadow: isDark ? '0 8px 30px rgba(0,0,0,0.6)' : '0 8px 30px rgba(0,0,0,0.08)'
             }}
             formatter={(val: any, name: any) => [`${currencySymbol}${Number(val).toLocaleString()}`, name]}
           />
@@ -54,9 +82,16 @@ export const CategoryStackedBarChart: React.FC<CategoryStackedBarChartProps> = (
             wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
             iconType="circle"
           />
-          <Bar dataKey="size100ml" name="100ml Bottles" stackId="a" fill="#8b5cf6" radius={[0, 0, 0, 0]} />
-          <Bar dataKey="size50ml" name="50ml Bottles" stackId="a" fill="#6366f1" radius={[0, 0, 0, 0]} />
-          <Bar dataKey="sets" name="Sets (Trio & Disc.)" stackId="a" fill="#ec4899" radius={[4, 4, 0, 0]} />
+          {dynamicKeys.map((catKey, idx) => (
+            <Bar
+              key={catKey}
+              dataKey={catKey}
+              name={catKey}
+              stackId="a"
+              fill={DYNAMIC_BAR_PALETTE[idx % DYNAMIC_BAR_PALETTE.length]}
+              radius={idx === dynamicKeys.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+            />
+          ))}
         </BarChart>
       </ResponsiveContainer>
     </div>
