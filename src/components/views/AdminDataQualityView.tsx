@@ -16,11 +16,15 @@ import { useData } from '../../context/DataContext';
 import { Card } from '../ui/Card';
 import { Table, Column } from '../ui/Table';
 import { NormalizedOrder } from '../../types/order';
+import { formatDatasetTitle } from '../../utils/datasetTitle';
 
 export const AdminDataQualityView: React.FC = () => {
   const { adminDataQualityService } = useServices();
   const { filteredOrders, secondaryFilteredOrders } = useFilters();
   const { activeDataset, secondaryDataset, isCompareEnabled } = useData();
+
+  const titleA = formatDatasetTitle(activeDataset?.name || '', activeDataset?.region);
+  const titleB = secondaryDataset ? formatDatasetTitle(secondaryDataset.name, secondaryDataset.region) : '';
 
   const qualityA = adminDataQualityService.analyzeQuality(filteredOrders);
   const qualityB = isCompareEnabled && secondaryDataset
@@ -133,7 +137,7 @@ export const AdminDataQualityView: React.FC = () => {
             {isCompareEnabled && secondaryDataset && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-role-subtle text-role border border-role-subtle">
                 <GitCompare className="w-3.5 h-3.5" />
-                <span>Comparing: {activeDataset?.name} vs {secondaryDataset.name}</span>
+                <span>Comparing: {titleA} vs {titleB}</span>
               </span>
             )}
           </div>

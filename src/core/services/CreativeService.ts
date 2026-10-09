@@ -55,17 +55,17 @@ export class CreativeService {
     // Showcase Top 3
     const showcaseTemplates = [
       {
-        badge: '👑 Flagship Bestseller',
+        badge: 'Flagship Bestseller',
         visualHook: 'Deep midnight obsidian silhouette with dramatic golden backlighting.',
         recommendedAsset: 'Full-bleed 1080x1350 Instagram Reel cover & Hero Landing Page banner.'
       },
       {
-        badge: '⚡ High Momentum',
+        badge: 'High Momentum',
         visualHook: 'Warm amber tones, floating mist particle effect, high-contrast typography.',
         recommendedAsset: 'TikTok hook video featuring bottle uncapping macro shot.'
       },
       {
-        badge: '💎 Cult Favorite',
+        badge: 'Cult Favorite',
         visualHook: 'Frosted glass reflection, minimal aesthetic on charcoal stone pedestal.',
         recommendedAsset: 'Email newsletter header image + Pinterest aesthetic lookbook.'
       }

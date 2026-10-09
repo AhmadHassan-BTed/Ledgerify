@@ -1,5 +1,6 @@
 import { NormalizedOrder } from '../../types/order';
 import { FinanceMetrics, CategoryBreakdownItem, MonthlyRevenueItem, StackedMonthlyCategoryItem, DailyRevenueItem } from '../../types/analytics';
+import { StatisticalEngine } from '../math/statisticalEngine';
 
 const PALETTE = [
   '#8b5cf6', // Obsidian Purple
@@ -122,6 +123,10 @@ export class FinanceService {
         orders: data.orders
       }));
 
+    // Statistical Quantiles & Variance Computation
+    const orderValues = orders.map(o => o.orderValue);
+    const dist = StatisticalEngine.calculateDistribution(orderValues);
+
     return {
       totalRevenue: Math.round(totalRevenue * 100) / 100,
       aov: Math.round(aov * 100) / 100,
@@ -131,7 +136,11 @@ export class FinanceService {
       categoryBreakdown,
       monthlyRevenue,
       stackedMonthlyCategory,
-      dailyRevenueSeries
+      dailyRevenueSeries,
+      medianOrderValue: dist.median,
+      p75OrderValue: dist.p75,
+      p90OrderValue: dist.p90,
+      stdDeviation: dist.standardDeviation
     };
   }
 

@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="./public/logo.svg" width="80" height="80" alt="Ledgerify Logo" />
+
 # Ledgerify
 
 ### Client-Side Shopify Ledger Intelligence & Multi-Department Analytics
@@ -13,7 +15,7 @@ A resilient, browser-native analytics platform engineered for complex Shopify Ex
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?style=flat-square)](https://github.com/AhmadHassan-BTed/.github/actions)
 
-[Live Demonstration](https://ahmadhassan-bted.github.io/.github/) • [Documentation](#architecture-overview) • [Contributing](#contributing-and-standards)
+[Live Demonstration](https://ahmadhassan-bted.github.io/.github/) • [System Architecture](./ARCHITECTURE.md) • [Contributing](#contributing-and-standards)
 
 </div>
 
@@ -40,6 +42,8 @@ Ledgerify is built upon three core engineering pillars:
 ---
 
 ## Architecture Overview
+
+> For the comprehensive technical specification, class diagrams, normalization rules, and state management flow, see [ARCHITECTURE.md](./ARCHITECTURE.md).
 
 ```mermaid
 flowchart TD

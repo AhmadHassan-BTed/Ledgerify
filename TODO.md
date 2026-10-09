@@ -1,103 +1,84 @@
-# Ledgerify - Project Action Plan & Pending Items (TODO)
+# Ledgerify - Project Action Plan & Implemented Milestones
 
-> **Status Snapshot**: Dev server running (`localhost:5173`). Repo migrated to GitHub with all 145 stars preserved and GitHub Pages live at `https://ahmadhassan-bted.github.io/.github/`.
-> This document captures all open items, bug fixes, user questions, and feature requests ready to be picked up in the next session.
-
----
-
-## 1. Direct Answers & UX Architecture Decisions
-
-### Q1: "Why does it open stuff in the form of tabs? And why does it open tabs in a repeated way?"
-
-- **Current Behavior**: The app currently treats each dataset/view like a dynamic browser tab, appending new tabs to the tab strip repeatedly whenever a view or dataset is opened. This clutters the UI and confuses non-technical users.
-- **Solution for Next Session**:
-  - **Remove repeated tab proliferation**. Replace the tab spam with **clean single-view in-place navigation** (matching the modern reference design).
-  - When clicking "Executive", "Finance", "Inventory", etc., it smoothly switches the active view in-place—no new tabs created, no duplicate tabs accumulated.
-  - If multiple datasets exist, switch them via a clean dataset selector pill/dropdown in the top navigation bar rather than opening new tabs.
-
-### Q2: "Comparison should ONLY enable if 2 XLS files are uploaded, with naming & region dropdown (UK, USA, UAE, etc.)"
-
-- **Solution for Next Session**:
-  - **Gate Compare Mode**: The "Compare" toggle/button will remain disabled (with a tooltip "Upload a second dataset to enable comparison") until exactly 2 datasets are uploaded.
-  - **Dataset Naming & Region Tagging on Upload**:
-    - When a user uploads an Excel file, show a quick, elegant dialog:
-      - **Dataset Name**: Text input with smart default (e.g., "UK Orders 2025" or "USA Store").
-      - **Region Dropdown**: Pre-populated with popular regions:
-        - 🇬🇧 United Kingdom (UK)
-        - 🇺🇸 United States (USA)
-        - 🇦🇪 United Arab Emirates (UAE)
-        - 🇪🇺 European Union (EU)
-        - 🇨🇦 Canada (CA)
-        - 🇦🇺 Australia (AU)
-        - 🌐 Global / Other
-  - In Compare View, use these custom names and region flags in side-by-side metric headers (e.g. "🇬🇧 UK vs 🇺🇸 USA").
-
-### Q3: "Dev Mode in Settings to show Health and Data Quality"
-
-- **Solution for Next Session**:
-  - Add a **"Developer & Data Quality Mode"** toggle in the Settings drawer/panel (default: **OFF**).
-  - **When OFF (Standard Executive Mode)**: The interface is clean, uncluttered, and 100% focused on business KPIs, sales, customers, and inventory. No technical jargon, no raw schema logs.
-  - **When ON (Dev Mode)**: Unlocks the Admin Data Quality view, sheet inspection logs, parsing health, and raw column mappings.
+> **Status Snapshot**: Dev server running (`localhost:5173`). All roadmap items, logo overhaul, UI inspiration alignment, in-depth drill-downs, dataset region tagging, compare gating, and settings dev mode have been completely implemented and verified with `npm run build` passing with 0 errors.
 
 ---
 
-## 2. High Priority Bugs & Layout Fixes
+## 1. Resolved Architectural Decisions & Upgrades
 
-- [ ] **Fix "Category Revenue Distribution" Card Overflowing Box**:
-  - **Issue**: In `FinanceView.tsx` (and other views using `CategoryDonutChart`), the card contains the donut chart and legend items (`50ml`, `100ml`, `Discovery`, `Trio`, `Order`).
-  - **Root Cause**: `CategoryDonutChart.tsx` currently applies `sm:flex-row`. When placed in a 1/3 grid column (`lg:col-span-1`), the screen width triggers `sm:flex-row`, attempting to fit a `192px` chart side-by-side with a `~180px` legend within a `~300px` container. This pushes the text and percentages outside the card border.
-  - **Fix**:
-    - Change `CategoryDonutChart` to a responsive stacked layout when inside compact containers (e.g. vertical stack or container query / flex-col by default).
-    - Add `min-w-0` and truncation safeguards to all flex children.
-    - Ensure all card containers have `overflow-hidden` or proper padding so elements strictly remain within their boxes.
+### ✓ Logo Overhaul & Brand Motive Alignment
+- **Problem**: Previous logo lacked identity and felt disjointed with clunky geometric shapes.
+- **Solution Delivered**:
+  - Re-engineered a modern, world-class Obsidian squircle badge with frosted glass sheen and an electric neon violet-to-cyan illuminated border glow.
+  - Formed from a fluid, continuous geometric "L" ribbon merging financial ledger structure with an ascending growth curve and luminous intelligence spark.
+  - Integrated into `Logo.tsx`, `public/logo.svg`, `Header.tsx`, `SettingsModal.tsx`, `FileDropzoneModal.tsx`, and empty fallback states.
 
-- [ ] **Dashboard Outer Frame & Breathing Room**:
-  - Ensure the main dashboard container does not cause horizontal scrollbars or bleed past the viewport.
-  - Maintain breathing room matching the obsidian executive design reference (`max-w-7xl` or `max-w-[1400px]` with balanced margins).
+### ✓ Clean Single-View In-Place Navigation (No Tab Spam)
+- **Delivered**: Replaced repeated dynamic tab proliferation with clean in-place navigation matching the modern Dribbble executive inspiration.
+- Smooth transitions across `Executive`, `Finance`, `Inventory`, `Operations`, `Marketing`, `Creative`, `Compare`, and `Data Quality`.
 
----
+### ✓ Compare Mode Gating & Region Dropdown on Upload
+- **Delivered**:
+  - **Gated Compare Mode**: "Compare" button and tab are automatically disabled when `< 2` datasets exist, with clean tooltips and a 1-click `⚡ Load Both` preloader.
+  - **Dataset Naming & Region Dropdown on Upload**: Upload modal prompts operators for custom dataset names and regions (`🇬🇧 UK`, `🇺🇸 USA`, `🇦🇪 UAE`, `🇪🇺 EU`, `🇨🇦 CA`, `🇦🇺 AU`, `🌐 Global`) with dynamic currency auto-assignment (no hardcoded currencies).
+  - Side-by-side comparison tables and charts feature region flags and custom dataset titles.
 
-## 3. High-Level Summary & Logical Grouping (Preventing User Overwhelm)
-
-- [ ] **Top Customers & Top Stuff Showcase**:
-  - Add high-level cards / leaderboards so executives instantly see:
-    - **Top Customers**: Top spending VIP buyers, order counts, lifetime spend, status pills (`Achieved`, `On-Process`).
-    - **Top Products / Scents**: Top revenue-generating fragrances and format yields.
-    - **Top Geographic Hubs**: Dominant regions/countries.
-  - Present summary totals first so users don't get bogged down in raw numbers before seeing the big picture.
-
-- [ ] **Logical Dashboard Hierarchy**:
-  - **Hero Bar**: Greeting ("Morning, Arthur" / "Welcome, Executive"), active dataset/region badge, timeframe selector.
-  - **Primary Overview**: Core revenue/order KPIs + category breakdown.
-  - **Analytical Performance**: Trajectory curve + customer activity patterns + top performers leaderboard.
+### ✓ Developer & Data Quality Mode in Settings
+- **Delivered**:
+  - Added a dedicated `SettingsModal.tsx` accessible from the header gear icon ⚙️.
+  - **Developer Mode Toggle** (default: **OFF**).
+    - **OFF**: Clean, 100% business-centric executive experience without technical noise.
+    - **ON**: Unlocks the Data Quality & Audit tab in the navigation bar and displays the live health score pill in the header.
+  - Includes currency override selector, theme switcher, and stored workbook manager.
 
 ---
 
-## 4. Interactivity: Sortable Columns & Clickable Visualizations (Drill-Down)
-
-- [ ] **Sortable Columns on Tables**:
-  - Make all column headers in `Table.tsx` and data views interactive.
-  - Clicking a header toggles sort between Ascending, Descending, and Default, displaying sort indicators (`▲`/`▼`).
-
-- [ ] **Clickable Visualizations & In-Depth Drill-Down Modal**:
-  - **Category Donut / Bar Charts**:
-    - Clicking a category slice (e.g., `50ml`, `100ml`, `Discovery`) opens an **In-Depth Drill-Down Modal**.
-    - Displays: total units sold for that format, revenue contribution, top scents in that format, and the itemized list of orders.
-  - **Top Customers List**:
-    - Clicking any customer opens their detailed customer dossier: past orders, items purchased, date history, and lifetime value.
-  - **Activity Heatmap / Daily Charts**:
-    - Clicking a day or bar reveals all orders placed during that time bucket.
+### ✓ Multi-Dataset Comparison Matrix & Full Browser Session Persistence
+- **Delivered**:
+  - **Arbitrary N-Way Multi-Dataset Comparison**: Completely removed 2-region limits; users can compare 2, 3, 4, 5+ files simultaneously.
+  - **Compare Count Selector**: Users can choose how many files to compare first (`2`, `3`, `4`, `All (N)`), assign each file to dedicated slots, and set any slot as the reference baseline.
+  - **Strict File Manager Separation**: Removed all benchmark comparison clutter from `FileManagerModal.tsx` so File Manager is 100% dedicated to workbook storage, multi-sheet switching, renewing, renaming, CSV exporting, and deletions.
+  - **Multi-Tier Browser Session Persistence**:
+    - **IndexedDB (`ledgerify_db`)**: Full dataset storage (workbooks, multi-sheet tabs, raw rows, parsed normalized orders, data quality metrics).
+    - **localStorage**: Automatically preserves active ledger selection (`ledgerify_active_dataset_id`), multi-ledger comparison slots (`ledgerify_compared_dataset_ids`), compare toggle state (`ledgerify_is_compare_enabled`), sheet selection (`ledgerify_selected_sheet`), active role tab (`ledgerify_active_tab`), date/status filters, Dev Mode toggle, and Obsidian dark/light theme across page reloads.
 
 ---
 
-## 5. Next Session Step-by-Step Implementation Checklist
+## 2. Layout & Card Bounds Fixes
 
-1. [ ] **Card Overflow**: Fix `CategoryDonutChart.tsx` layout and add flex boundaries.
-2. [ ] **Navigation & Tabs**: Eliminate tab duplication; make navigation switch views in-place.
-3. [ ] **Compare Mode Gating & Region Dropdown**:
-   - Require 2 datasets to enable Compare.
-   - Add naming input & Region dropdown (`UK`, `USA`, `UAE`, etc.) on upload. so there will be no hardcoded currencies.
-4. [ ] **Settings Dev Mode**: Add "Developer & Data Quality Mode" toggle.
-5. [ ] **Sortable Tables**: Add click-to-sort headers in `Table.tsx`.
-6. [ ] **Drill-Down Modal**: Create `DrillDownModal.tsx` and wire click handlers to charts & customer rows.
-7. [ ] **Build & Deploy**: Verify with `npm run build` and push to GitHub.
+- [x] **Fix "Category Revenue Distribution" Card Overflowing Box**:
+  - Overhauled `CategoryDonutChart.tsx` with a responsive stacked/side-by-side layout, `min-w-0`, and text truncation safeguards. Elements strictly remain inside their containers.
+- [x] **Executive Layout & Breathing Room**:
+  - Balanced container margins (`max-w-[1536px]` centered), dark obsidian glass styling, zero horizontal bleeding.
+
+---
+
+## 3. High-Level Summaries & Top VIP Showcase
+
+- [x] **Executive Hero Bar**: Greeting banner, active dataset flag pill, quick timeframe filters (`All-Time` / `Filtered Period`).
+- [x] **Top VIP Customers Leaderboard**:
+  - Ranked list of top lifetime spenders with circular avatar initials, spend totals, order counts, and status pills (`Achieved`, `On-Process`, `VIP`).
+- [x] **Top Products / Scent Velocity Showcase**: Top-selling fragrance yields and format rankings.
+
+---
+
+## 4. Interactive Visualizations & In-Depth Drill-Down Modal
+
+- [x] **Sortable Tables**:
+  - Added interactive click-to-sort headers (`▲`/`▼`) to `Table.tsx` across all dashboards.
+- [x] **In-Depth Drill-Down Modal (`DrillDownModal.tsx`)**:
+  - **Category Donut / Bar clicks**: Opens format breakdown with units sold, revenue share, and itemized order list.
+  - **Top Customers clicks**: Opens comprehensive customer dossier with complete purchase history and cart items.
+  - **Activity Heatmap clicks**: Clicking a day of the week reveals all orders dispatched on that weekday.
+  - **Inventory Item clicks**: Clicking a fragrance displays all orders containing that scent.
+  - **Features**: Live search filtering, sorting, pagination, and one-click CSV export.
+
+---
+
+## 5. React Hook Order & UX Hardening
+
+1. [x] **React Rules of Hooks Fix**: Moved all hooks (`useState`, `useMemo`) to the unconditional top level in [`DrillDownModal.tsx`](file:///home/leech/Projects/Ledgerify/src/components/ui/DrillDownModal.tsx), fixing the warning and fatal crash.
+2. [x] **100% Emoji Removal**: Replaced all raw emojis with proper Lucide SVG icons (`Building2`, `Layers`, `Coins`, `Users`, `Package`, `Sparkles`, `Crown`, `Zap`, `Database`) and clean region badge pills.
+3. [x] **Non-Intrusive Card UX**: Overview KPI cards act strictly as informative metrics without intrusive popups.
+4. [x] **Error Boundary**: Added [`ErrorBoundary.tsx`](file:///home/leech/Projects/Ledgerify/src/components/ui/ErrorBoundary.tsx) to protect view rendering.
+5. [x] **Production Build Verified**: `npm run build` runs with 0 errors.

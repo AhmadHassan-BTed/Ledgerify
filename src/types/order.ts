@@ -54,12 +54,30 @@ export interface SheetData {
   isLedger: boolean;
 }
 
+export interface RegionOption {
+  code: string;
+  name: string;
+  regionCode: string;
+  currency: string;
+}
+
+export const REGIONS: RegionOption[] = [
+  { code: 'UK', name: 'United Kingdom (UK)', regionCode: 'UK', currency: '£' },
+  { code: 'USA', name: 'United States (USA)', regionCode: 'US', currency: '$' },
+  { code: 'UAE', name: 'United Arab Emirates (UAE)', regionCode: 'UAE', currency: 'AED' },
+  { code: 'EU', name: 'European Union (EU)', regionCode: 'EU', currency: '€' },
+  { code: 'CA', name: 'Canada (CA)', regionCode: 'CA', currency: 'C$' },
+  { code: 'AU', name: 'Australia (AU)', regionCode: 'AU', currency: 'A$' },
+  { code: 'GLOBAL', name: 'Global / Other', regionCode: 'INTL', currency: '$' },
+];
+
 export interface Dataset {
   id: string;
   name: string;
   filename: string;
   sourceType: 'UK' | 'US' | 'CUSTOM';
-  currency: string; // '£' | '$' | '€'
+  region?: string; // 'UK' | 'USA' | 'UAE' | 'EU' | 'CA' | 'AU' | 'GLOBAL'
+  currency: string; // '£' | '$' | '€' | 'AED' | 'C$' | 'A$'
   totalRows: number;
   uploadedAt: string;
 
@@ -78,4 +96,4 @@ export interface Dataset {
   dataQuality: DataQualitySummary;
 }
 
-export type Currency = '£' | '$' | '€';
+export type Currency = string;

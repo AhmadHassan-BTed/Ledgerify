@@ -1,6 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
-import { Dataset, NormalizedOrder, SheetData } from '../types/order';
+import { Dataset, NormalizedOrder, SheetData, REGIONS } from '../types/order';
+import { DrillDownData } from '../types/analytics';
 import { useServices } from './ServiceContext';
+
+interface UploadOptions {
+  customName?: string;
+  region?: string;
+  currency?: string;
+}
 
 interface DataContextType {
   datasets: Dataset[];
@@ -11,10 +18,17 @@ interface DataContextType {
   setSelectedSheet: (sheetName: string) => void;
   availableSheets: string[];
 
-  // Compare Feature (Global toggleable capability)
+  // Compare Feature (Flexible Multi-Dataset Comparison)
   isCompareEnabled: boolean;
   setIsCompareEnabled: (enabled: boolean) => void;
   toggleCompare: () => void;
+  comparedDatasetIds: string[];
+  setComparedDatasetIds: (ids: string[]) => void;
+  addComparedDatasetId: (id: string) => void;
+  removeComparedDatasetId: (id: string) => void;
+  comparedDatasets: Dataset[];
+
+  // Backwards compatibility for dual-dataset views
   secondaryDatasetId: string | null;
   secondaryDataset: Dataset | null;
   secondaryOrders: NormalizedOrder[];
@@ -22,10 +36,22 @@ interface DataContextType {
   setSecondarySelectedSheet: (sheetName: string) => void;
   setSecondaryDatasetId: (id: string | null) => void;
 
+  // Developer & Data Quality Mode
+  isDevMode: boolean;
+  setIsDevMode: (enabled: boolean) => void;
+
+  // Global Drill Down State
+  drillDownData: DrillDownData | null;
+  openDrillDown: (data: DrillDownData) => void;
+  closeDrillDown: () => void;
+
   isLoading: boolean;
   loadingMessage: string;
   error: string | null;
-  uploadFile: (file: File) => Promise<void>;
+  uploadFile: (file: File, options?: UploadOptions) => Promise<void>;
+  updateDataset: (id: string, updates: Partial<Dataset>) => Promise<void>;
+  replaceDatasetFile: (id: string, file: File, options?: UploadOptions) => Promise<void>;
+  exportDatasetCsv: (id: string) => void;
   loadSampleDataset: (type: 'UK' | 'US') => Promise<void>;
   loadBothAndCompare: () => Promise<void>;
   setActiveDatasetId: (id: string) => void;
@@ -33,19 +59,124 @@ interface DataContextType {
   clearAllDatasets: () => Promise<void>;
 }
 
+const getDefaultSheetForDataset = (d: Dataset | null | undefined): string => {
+  if (!d || !d.sheets) return d?.selectedSheet || 'default';
+  const keys = Object.keys(d.sheets);
+  if (keys.length > 1) {
+    return 'All Sheets (Combined)';
+  }
+  return keys[0] || d.selectedSheet || 'default';
+};
+
 const DataContext = createContext<DataContextType | null>(null);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { parser, storage, sampleDataLoader } = useServices();
 
+  // Initialize state with localStorage fallbacks
   const [datasets, setDatasets] = useState<Dataset[]>([]);
-  const [activeDatasetId, setActiveDatasetId] = useState<string | null>(null);
-  const [selectedSheet, setSelectedSheet] = useState<string>('default');
+  const [activeDatasetId, setActiveDatasetIdState] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('ledgerify_active_dataset_id');
+    } catch {
+      return null;
+    }
+  });
+  const [selectedSheet, setSelectedSheetState] = useState<string>(() => {
+    try {
+      return localStorage.getItem('ledgerify_selected_sheet') || 'All Sheets (Combined)';
+    } catch {
+      return 'All Sheets (Combined)';
+    }
+  });
 
   // Compare Feature State
-  const [isCompareEnabled, setIsCompareEnabled] = useState<boolean>(false);
-  const [secondaryDatasetId, setSecondaryDatasetId] = useState<string | null>(null);
-  const [secondarySelectedSheet, setSecondarySelectedSheet] = useState<string>('default');
+  const [isCompareEnabled, setIsCompareEnabledState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('ledgerify_is_compare_enabled') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [comparedDatasetIds, setComparedDatasetIdsState] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('ledgerify_compared_dataset_ids');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [secondarySelectedSheet, setSecondarySelectedSheetState] = useState<string>(() => {
+    try {
+      return localStorage.getItem('ledgerify_secondary_selected_sheet') || 'All Sheets (Combined)';
+    } catch {
+      return 'All Sheets (Combined)';
+    }
+  });
+
+  const setActiveDatasetId = (id: string | null) => {
+    setActiveDatasetIdState(id);
+    try {
+      if (id) {
+        localStorage.setItem('ledgerify_active_dataset_id', id);
+        const target = datasets.find(d => d.id === id);
+        if (target) {
+          const nextSheet = getDefaultSheetForDataset(target);
+          setSelectedSheetState(nextSheet);
+          localStorage.setItem('ledgerify_selected_sheet', nextSheet);
+        }
+      } else {
+        localStorage.removeItem('ledgerify_active_dataset_id');
+      }
+    } catch {}
+  };
+
+  const setSelectedSheet = (sheet: string) => {
+    setSelectedSheetState(sheet);
+    try {
+      localStorage.setItem('ledgerify_selected_sheet', sheet);
+    } catch {}
+  };
+
+  const setIsCompareEnabled = (action: boolean | ((prev: boolean) => boolean)) => {
+    setIsCompareEnabledState(prev => {
+      const next = typeof action === 'function' ? action(prev) : action;
+      try {
+        localStorage.setItem('ledgerify_is_compare_enabled', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const setSecondarySelectedSheet = (sheet: string) => {
+    setSecondarySelectedSheetState(sheet);
+    try {
+      localStorage.setItem('ledgerify_secondary_selected_sheet', sheet);
+    } catch {}
+  };
+
+  // Dev Mode State (Default: false)
+  const [isDevMode, setIsDevModeState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('ledgerify_dev_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const setIsDevMode = (enabled: boolean) => {
+    setIsDevModeState(enabled);
+    try {
+      localStorage.setItem('ledgerify_dev_mode', String(enabled));
+    } catch {
+      // ignore
+    }
+  };
+
+  // Drill-Down Modal State
+  const [drillDownData, setDrillDownData] = useState<DrillDownData | null>(null);
+  const openDrillDown = (data: DrillDownData) => setDrillDownData(data);
+  const closeDrillDown = () => setDrillDownData(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [loadingMessage, setLoadingMessage] = useState<string>('Initializing Ledgerify...');
@@ -60,11 +191,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoadingMessage('Restoring saved ledger sessions...');
         const stored = await storage.getAllDatasets();
 
-        // Check if stored datasets have sheets property, otherwise refresh
         const validStored = stored.filter(d => d && d.id && Array.isArray(d.orders));
 
         if (validStored.length > 0 && mounted) {
-          // Ensure every dataset has sheets structure
           const sanitized = validStored.map(d => {
             if (!d.sheets) {
               const defSheetName = d.selectedSheet || 'Ledger';
@@ -78,16 +207,37 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 }
               };
             }
+            if (!d.region) {
+              const r = d.sourceType === 'UK' ? REGIONS[0] : REGIONS[1];
+              d.region = r.code;
+            }
             return d;
           });
 
           setDatasets(sanitized);
-          setActiveDatasetId(sanitized[0].id);
-          setSelectedSheet(sanitized[0].selectedSheet || Object.keys(sanitized[0].sheets)[0] || 'default');
-          if (sanitized.length > 1) {
-            setSecondaryDatasetId(sanitized[1].id);
-            setSecondarySelectedSheet(sanitized[1].selectedSheet || Object.keys(sanitized[1].sheets)[0] || 'default');
+
+          // Restore saved active dataset or fallback to first
+          const savedActiveId = localStorage.getItem('ledgerify_active_dataset_id');
+          const targetActive = sanitized.find(d => d.id === savedActiveId) || sanitized[0];
+          setActiveDatasetIdState(targetActive.id);
+          
+          const savedSheet = localStorage.getItem('ledgerify_selected_sheet');
+          setSelectedSheetState(savedSheet && (savedSheet === 'All Sheets (Combined)' || targetActive.sheets?.[savedSheet]) ? savedSheet : getDefaultSheetForDataset(targetActive));
+
+          // Restore saved compared dataset IDs
+          let savedCompared: string[] = [];
+          try {
+            const raw = localStorage.getItem('ledgerify_compared_dataset_ids');
+            if (raw) savedCompared = JSON.parse(raw);
+          } catch {}
+
+          const validCompared = savedCompared.filter(id => sanitized.some(d => d.id === id));
+          if (validCompared.length >= 2) {
+            setComparedDatasetIdsState(validCompared);
+          } else if (sanitized.length > 1) {
+            setComparedDatasetIdsState(sanitized.slice(0, 2).map(d => d.id));
           }
+
           setIsLoading(false);
           return;
         }
@@ -96,11 +246,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (mounted) {
           setLoadingMessage('Loading sample UK Orders ledger...');
           const ukSample = await sampleDataLoader.loadSample('UK');
+          ukSample.region = 'UK';
+          ukSample.currency = '£';
           await storage.saveDataset(ukSample);
           if (mounted) {
             setDatasets([ukSample]);
             setActiveDatasetId(ukSample.id);
-            setSelectedSheet(ukSample.selectedSheet);
+            setSelectedSheet(getDefaultSheetForDataset(ukSample));
             setIsLoading(false);
           }
         }
@@ -121,7 +273,71 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [storage, sampleDataLoader]);
 
   const activeDataset = datasets.find(d => d.id === activeDatasetId) || datasets[0] || null;
-  const secondaryDataset = datasets.find(d => d.id === secondaryDatasetId) || (datasets.length > 1 ? datasets[1] : null);
+
+  // Multi-dataset comparison resolution
+  const comparedDatasets = useMemo(() => {
+    if (comparedDatasetIds.length > 0) {
+      const resolved = comparedDatasetIds
+        .map(id => datasets.find(d => d.id === id))
+        .filter(Boolean) as Dataset[];
+      if (resolved.length > 0) return resolved;
+    }
+    return datasets.length >= 2 ? datasets.slice(0, 2) : datasets;
+  }, [comparedDatasetIds, datasets]);
+
+  const secondaryDataset = useMemo(() => {
+    if (comparedDatasets.length >= 2) {
+      return comparedDatasets[1];
+    }
+    const other = datasets.find(d => d.id !== activeDatasetId);
+    return other || null;
+  }, [comparedDatasets, datasets, activeDatasetId]);
+
+  const secondaryDatasetId = secondaryDataset?.id || null;
+
+  const setSecondaryDatasetId = (id: string | null) => {
+    if (!id) return;
+    setComparedDatasetIdsState(prev => {
+      const first = prev[0] || activeDatasetId || datasets[0]?.id;
+      return [first, id, ...prev.slice(2).filter(x => x !== id && x !== first)];
+    });
+  };
+
+  const setComparedDatasetIds = (ids: string[]) => {
+    const valid = ids.filter(id => datasets.some(d => d.id === id));
+    setComparedDatasetIdsState(valid);
+    try {
+      localStorage.setItem('ledgerify_compared_dataset_ids', JSON.stringify(valid));
+    } catch {}
+  };
+
+  const addComparedDatasetId = (id: string) => {
+    setComparedDatasetIdsState(prev => {
+      if (prev.includes(id)) return prev;
+      const next = [...prev, id];
+      try {
+        localStorage.setItem('ledgerify_compared_dataset_ids', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const removeComparedDatasetId = (id: string) => {
+    setComparedDatasetIdsState(prev => {
+      let next = prev.filter(x => x !== id);
+      if (next.length < 2 && isCompareEnabled) {
+        // keep at least 2 if available
+        const remaining = datasets.filter(d => !next.includes(d.id));
+        if (remaining.length > 0 && next.length === 1) {
+          next = [...next, remaining[0].id];
+        }
+      }
+      try {
+        localStorage.setItem('ledgerify_compared_dataset_ids', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   // Available sheets for active dataset with robust null safety
   const availableSheets = useMemo(() => {
@@ -198,28 +414,112 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return secondaryDataset.orders || [];
   }, [secondaryDataset, secondarySelectedSheet]);
 
-  const uploadFile = async (file: File) => {
+  const uploadFile = async (file: File, options?: UploadOptions) => {
     try {
       setIsLoading(true);
-      setLoadingMessage(`Ingesting & sanitizing ${file.name}...`);
+      setLoadingMessage(`Parsing workbook "${file.name}"...`);
       setError(null);
 
       const buffer = await file.arrayBuffer();
-      const dataset = await parser.parseWorkbook(buffer, file.name);
+      const parsed = await parser.parseWorkbook(buffer, file.name, options);
+      await storage.saveDataset(parsed);
 
-      await storage.saveDataset(dataset);
       setDatasets(prev => {
-        const filtered = prev.filter(d => d.id !== dataset.id);
-        return [dataset, ...filtered];
+        const next = [parsed, ...prev.filter(d => d.id !== parsed.id)];
+        return next;
       });
-      setActiveDatasetId(dataset.id);
-      setSelectedSheet(dataset.selectedSheet);
+
+      setActiveDatasetId(parsed.id);
+      setSelectedSheet(getDefaultSheetForDataset(parsed));
+
+      // Add to compared list if compare is enabled
+      setComparedDatasetIdsState(prev => {
+        if (prev.length < 2) {
+          return [parsed.id, ...(prev.filter(id => id !== parsed.id))];
+        }
+        return prev;
+      });
     } catch (err: any) {
-      console.error('File parsing error:', err);
-      setError(err.message || `Failed to parse ${file.name}`);
+      console.error('File upload error:', err);
+      setError(err.message || 'Failed to parse and store file');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const updateDataset = async (id: string, updates: Partial<Dataset>) => {
+    try {
+      const dataset = datasets.find(d => d.id === id);
+      if (!dataset) return;
+
+      const updated = { ...dataset, ...updates };
+      await storage.saveDataset(updated);
+
+      setDatasets(prev => prev.map(d => d.id === id ? updated : d));
+    } catch (err: any) {
+      console.error('Dataset update error:', err);
+      setError(err.message || 'Failed to update dataset');
+    }
+  };
+
+  const replaceDatasetFile = async (id: string, file: File, options?: UploadOptions) => {
+    try {
+      setIsLoading(true);
+      setLoadingMessage(`Renewing dataset with "${file.name}"...`);
+      setError(null);
+
+      const existing = datasets.find(d => d.id === id);
+      const buffer = await file.arrayBuffer();
+      const parsed = await parser.parseWorkbook(buffer, file.name, {
+        customName: options?.customName || existing?.name || file.name,
+        region: options?.region || existing?.region,
+        currency: options?.currency || existing?.currency
+      });
+
+      parsed.id = id; // Preserve ID
+      await storage.saveDataset(parsed);
+
+      setDatasets(prev => prev.map(d => d.id === id ? parsed : d));
+
+      if (activeDatasetId === id) {
+        setSelectedSheet(getDefaultSheetForDataset(parsed));
+      }
+    } catch (err: any) {
+      console.error('Dataset renewal error:', err);
+      setError(err.message || 'Failed to renew dataset file');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const exportDatasetCsv = (id: string) => {
+    const target = datasets.find(d => d.id === id);
+    if (!target || !target.orders || target.orders.length === 0) return;
+
+    const headers = ['Order Number', 'Date', 'Customer Name', 'Email', 'City', 'Province/State', 'Country', 'Fragrances', 'Order Value', 'Status'];
+    const rows = target.orders.map(o => [
+      `"${o.orderNumber}"`,
+      `"${o.date}"`,
+      `"${(o.customerName || '').replace(/"/g, '""')}"`,
+      `"${(o.email || '').replace(/"/g, '""')}"`,
+      `"${(o.city || '').replace(/"/g, '""')}"`,
+      `"${(o.provinceState || '').replace(/"/g, '""')}"`,
+      `"${(o.country || '').replace(/"/g, '""')}"`,
+      `"${(o.fragrancesRaw || '').replace(/"/g, '""')}"`,
+      o.orderValue.toFixed(2),
+      `"${o.status}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(target.name || 'ledger').replace(/[^a-z0-9]/gi, '_').toLowerCase()}_export.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const loadSampleDataset = async (type: 'UK' | 'US') => {
@@ -229,6 +529,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
 
       const dataset = await sampleDataLoader.loadSample(type);
+      dataset.region = type === 'UK' ? 'UK' : 'USA';
+      dataset.currency = type === 'UK' ? '£' : '$';
       await storage.saveDataset(dataset);
 
       setDatasets(prev => {
@@ -240,7 +542,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       setActiveDatasetId(dataset.id);
-      setSelectedSheet(dataset.selectedSheet);
+      setSelectedSheet(getDefaultSheetForDataset(dataset));
     } catch (err: any) {
       console.error('Sample loading error:', err);
       setError(err.message || 'Failed to load sample dataset');
@@ -256,14 +558,19 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setError(null);
 
       const { uk, us } = await sampleDataLoader.loadBothSamples();
+      uk.region = 'UK';
+      uk.currency = '£';
+      us.region = 'USA';
+      us.currency = '$';
+
       await storage.saveDataset(uk);
       await storage.saveDataset(us);
 
       setDatasets([uk, us]);
       setActiveDatasetId(uk.id);
-      setSelectedSheet(uk.selectedSheet);
-      setSecondaryDatasetId(us.id);
-      setSecondarySelectedSheet(us.selectedSheet);
+      setSelectedSheet(getDefaultSheetForDataset(uk));
+      setComparedDatasetIdsState([uk.id, us.id]);
+      setSecondarySelectedSheet(getDefaultSheetForDataset(us));
       setIsCompareEnabled(true);
     } catch (err: any) {
       console.error('Comparative loading error:', err);
@@ -274,7 +581,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const toggleCompare = () => {
-    setIsCompareEnabled(prev => !prev);
+    if (datasets.length < 2) return;
+    setIsCompareEnabled(prev => {
+      const next = !prev;
+      if (next && comparedDatasetIds.length < 2) {
+        setComparedDatasetIdsState(datasets.slice(0, 2).map(d => d.id));
+      }
+      return next;
+    });
   };
 
   const removeDataset = async (id: string) => {
@@ -285,8 +599,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setActiveDatasetId(remaining[0]?.id || null);
         setSelectedSheet(remaining[0]?.selectedSheet || 'default');
       }
-      if (secondaryDatasetId === id) {
-        setSecondaryDatasetId(remaining[1]?.id || null);
+      setComparedDatasetIdsState(current => current.filter(x => x !== id));
+      if (remaining.length < 2) {
+        setIsCompareEnabled(false);
       }
       return remaining;
     });
@@ -296,7 +611,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await storage.clearAll();
     setDatasets([]);
     setActiveDatasetId(null);
-    setSecondaryDatasetId(null);
+    setComparedDatasetIdsState([]);
     setIsCompareEnabled(false);
   };
 
@@ -314,6 +629,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isCompareEnabled,
         setIsCompareEnabled,
         toggleCompare,
+        comparedDatasetIds,
+        setComparedDatasetIds,
+        addComparedDatasetId,
+        removeComparedDatasetId,
+        comparedDatasets,
         secondaryDatasetId,
         secondaryDataset,
         secondaryOrders,
@@ -321,10 +641,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSecondarySelectedSheet,
         setSecondaryDatasetId,
 
+        isDevMode,
+        setIsDevMode,
+
+        drillDownData,
+        openDrillDown,
+        closeDrillDown,
+
         isLoading,
         loadingMessage,
         error,
         uploadFile,
+        updateDataset,
+        replaceDatasetFile,
+        exportDatasetCsv,
         loadSampleDataset,
         loadBothAndCompare,
         setActiveDatasetId,

@@ -18,6 +18,7 @@ interface TableProps<T> {
   exportFilename?: string;
   emptyMessage?: string;
   headerAction?: React.ReactNode;
+  onRowClick?: (row: T) => void;
 }
 
 export function Table<T extends Record<string, any>>({
@@ -28,7 +29,8 @@ export function Table<T extends Record<string, any>>({
   searchField,
   exportFilename = 'ledger_export.csv',
   emptyMessage = 'No records match your criteria',
-  headerAction
+  headerAction,
+  onRowClick
 }: TableProps<T>) {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -137,7 +139,7 @@ export function Table<T extends Record<string, any>>({
       </div>
 
       {/* Table Container */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200/90 dark:border-obsidian-700/60 bg-white dark:bg-obsidian-900/60 shadow-sm">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200/90 dark:border-obsidian-700/60 bg-white dark:bg-obsidian-900/60 shadow-sm">
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="border-b border-slate-200 dark:border-obsidian-750 bg-slate-50 dark:bg-obsidian-850/70 text-slate-600 dark:text-zinc-400">
@@ -145,14 +147,20 @@ export function Table<T extends Record<string, any>>({
                 <th
                   key={idx}
                   className={`py-3 px-4 font-semibold select-none ${col.className || ''} ${
-                    col.sortable ? 'cursor-pointer hover:text-slate-900 dark:hover:text-zinc-200' : ''
+                    col.sortable ? 'cursor-pointer hover:text-slate-900 dark:hover:text-zinc-200 hover:bg-slate-100/50 dark:hover:bg-obsidian-800/50' : ''
                   }`}
                   onClick={() => col.sortable && handleSort(col.accessorKey as string)}
                 >
                   <div className="inline-flex items-center gap-1.5">
                     <span>{col.header}</span>
-                    {col.sortable && sortKey === col.accessorKey && (
-                      sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-role" /> : <ChevronDown className="w-3.5 h-3.5 text-role" />
+                    {col.sortable && (
+                      <span className="text-slate-400 dark:text-zinc-500 font-mono">
+                        {sortKey === col.accessorKey ? (
+                          sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-role" /> : <ChevronDown className="w-3.5 h-3.5 text-role" />
+                        ) : (
+                          <span className="text-[10px] opacity-40">⇅</span>
+                        )}
+                      </span>
                     )}
                   </div>
                 </th>
@@ -170,7 +178,12 @@ export function Table<T extends Record<string, any>>({
               paginatedData.map((row, rIdx) => (
                 <tr
                   key={rIdx}
-                  className="hover:bg-slate-50/80 dark:hover:bg-obsidian-800/40 transition-colors"
+                  onClick={() => onRowClick && onRowClick(row)}
+                  className={`transition-colors ${
+                    onRowClick
+                      ? 'cursor-pointer hover:bg-slate-100/80 dark:hover:bg-obsidian-800/70'
+                      : 'hover:bg-slate-50/80 dark:hover:bg-obsidian-800/40'
+                  }`}
                 >
                   {columns.map((col, cIdx) => (
                     <td key={cIdx} className={`py-3 px-4 ${col.className || ''}`}>
@@ -204,7 +217,7 @@ export function Table<T extends Record<string, any>>({
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="px-2">
+          <span className="px-2 font-mono">
             Page {currentPage} of {totalPages}
           </span>
           <button

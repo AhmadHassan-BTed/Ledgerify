@@ -13,22 +13,27 @@ import { useTheme } from '../../context/ThemeContext';
 import { useFilters } from '../../context/FilterContext';
 import { ROLE_THEMES } from '../../styles/themes/roleThemes';
 
+export interface ComparisonSeriesConfig {
+  key: string;
+  name: string;
+  color: string;
+  currency: string;
+}
+
 interface ComparisonLineChartProps {
-  data: {
-    month: string;
-    revenueA: number;
-    revenueB: number;
-  }[];
-  nameA: string;
-  nameB: string;
+  data: any[];
+  series?: ComparisonSeriesConfig[];
+  nameA?: string;
+  nameB?: string;
   currA?: string;
   currB?: string;
 }
 
 export const ComparisonLineChart: React.FC<ComparisonLineChartProps> = ({
   data,
-  nameA,
-  nameB,
+  series,
+  nameA = 'Dataset A',
+  nameB = 'Dataset B',
   currA = '£',
   currB = '$'
 }) => {
@@ -36,6 +41,15 @@ export const ComparisonLineChart: React.FC<ComparisonLineChartProps> = ({
   const { filters } = useFilters();
   const isDark = theme === 'dark';
   const roleTheme = ROLE_THEMES[filters.activeTab] || ROLE_THEMES.executive;
+
+  const activeSeries: ComparisonSeriesConfig[] = series && series.length > 0
+    ? series
+    : [
+        { key: 'revenueA', name: nameA, color: roleTheme.primaryHex, currency: currA },
+        { key: 'revenueB', name: nameB, color: '#06b6d4', currency: currB }
+      ];
+
+  const currencyMap = new Map(activeSeries.map(s => [s.name, s.currency]));
 
   return (
     <div className="w-full h-72">
@@ -66,7 +80,7 @@ export const ComparisonLineChart: React.FC<ComparisonLineChartProps> = ({
               boxShadow: isDark ? '0 8px 30px rgba(0,0,0,0.6)' : '0 8px 30px rgba(0,0,0,0.08)'
             }}
             formatter={(val: any, name: any) => {
-              const prefix = name === nameA ? currA : currB;
+              const prefix = currencyMap.get(name) || '£';
               return [`${prefix}${Number(val).toLocaleString()}`, name];
             }}
           />
@@ -74,24 +88,18 @@ export const ComparisonLineChart: React.FC<ComparisonLineChartProps> = ({
             wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
             iconType="circle"
           />
-          <Line
-            type="monotone"
-            dataKey="revenueA"
-            name={nameA}
-            stroke={roleTheme.primaryHex}
-            strokeWidth={3}
-            dot={{ r: 4, fill: roleTheme.primaryHex }}
-            activeDot={{ r: 6, fill: roleTheme.accentHex }}
-          />
-          <Line
-            type="monotone"
-            dataKey="revenueB"
-            name={nameB}
-            stroke="#06b6d4"
-            strokeWidth={3}
-            dot={{ r: 4, fill: '#06b6d4' }}
-            activeDot={{ r: 6, fill: '#67e8f9' }}
-          />
+          {activeSeries.map((s) => (
+            <Line
+              key={s.key}
+              type="monotone"
+              dataKey={s.key}
+              name={s.name}
+              stroke={s.color}
+              strokeWidth={2.5}
+              dot={{ r: 3.5, fill: s.color }}
+              activeDot={{ r: 5.5, fill: s.color }}
+            />
+          ))}
         </LineChart>
       </ResponsiveContainer>
     </div>

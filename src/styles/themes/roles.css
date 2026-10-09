@@ -4,16 +4,16 @@
    Dynamic color palettes switching dynamically for each role!
    ======================================================== */
 
-/* Executive (CEO): Prestigious Amber / Gold */
+/* Executive (CEO): Electric Indigo / Violet */
 :root, [data-role="executive"] {
-  --role-primary: #d97706;
-  --role-primary-hover: #b45309;
-  --role-accent: #f59e0b;
-  --role-light: #fef3c7;
-  --role-text: #92400e;
-  --role-rgb: 217, 119, 6;
-  --role-glow: rgba(245, 158, 11, 0.35);
-  --role-gradient: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+  --role-primary: #6366f1;
+  --role-primary-hover: #4f46e5;
+  --role-accent: #8b5cf6;
+  --role-light: #e0e7ff;
+  --role-text: #3730a3;
+  --role-rgb: 99, 102, 241;
+  --role-glow: rgba(99, 102, 241, 0.35);
+  --role-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
 }
 
 /* Finance: Money & Ledger Emerald Green */

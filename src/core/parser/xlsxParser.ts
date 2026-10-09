@@ -1,15 +1,26 @@
 import * as XLSX from 'xlsx';
-import { IFileParser } from './IFileParser';
-import { Dataset, NormalizedOrder, DataQualitySummary, SheetData } from '../../types/order';
+import { IFileParser, ParseOptions } from './IFileParser';
+import { Dataset, NormalizedOrder, DataQualitySummary, SheetData, REGIONS } from '../../types/order';
 import { findMappedKey, parseFragranceString, discoverCategoryColumns } from './normalizer';
 
 export class XlsxParser implements IFileParser {
-  async parseWorkbook(fileBuffer: ArrayBuffer, filename: string): Promise<Dataset> {
+  async parseWorkbook(fileBuffer: ArrayBuffer, filename: string, options?: ParseOptions): Promise<Dataset> {
     const workbook = XLSX.read(fileBuffer, { type: 'array', cellDates: true });
     const allSheetNames = workbook.SheetNames;
 
-    const isUK = filename.toLowerCase().includes('uk') || filename.toLowerCase().includes('gb');
-    const detectedCurrency: '£' | '$' | '€' = isUK ? '£' : '$';
+    const lowerFilename = filename.toLowerCase();
+    let detectedRegion = options?.region || (
+      lowerFilename.includes('uk') || lowerFilename.includes('gb') ? 'UK' :
+      lowerFilename.includes('us') ? 'USA' :
+      lowerFilename.includes('uae') || lowerFilename.includes('dubai') ? 'UAE' :
+      lowerFilename.includes('eu') || lowerFilename.includes('europe') ? 'EU' :
+      lowerFilename.includes('ca') || lowerFilename.includes('canada') ? 'CA' :
+      lowerFilename.includes('au') || lowerFilename.includes('australia') ? 'AU' :
+      'GLOBAL'
+    );
+
+    const regionMeta = REGIONS.find(r => r.code === detectedRegion) || REGIONS.find(r => r.code === 'GLOBAL') || REGIONS[0];
+    const currency = options?.currency || regionMeta.currency;
 
     const sheets: Record<string, SheetData> = {};
     const globalCategories = new Set<string>();
@@ -73,7 +84,7 @@ export class XlsxParser implements IFileParser {
         const email = String(this.getValue(row, 'email') ?? '').trim();
         const city = String(this.getValue(row, 'city') ?? '').trim();
         const provinceState = String(this.getValue(row, 'provinceState') ?? '').trim();
-        const country = String(this.getValue(row, 'country') ?? (isUK ? 'GB' : 'US')).trim();
+        const country = String(this.getValue(row, 'country') ?? (detectedRegion === 'UK' ? 'GB' : 'US')).trim();
         const fragrancesRaw = String(this.getValue(row, 'fragrancesOrdered') ?? '').trim();
         
         const orderQuantity = Math.max(0, Number(this.getValue(row, 'orderQuantity')) || 0);
@@ -167,12 +178,15 @@ export class XlsxParser implements IFileParser {
     const activeOrders = sheets[selectedSheet]?.orders || [];
     const dataQuality = this.calculateDataQuality(activeOrders);
 
+    const name = options?.customName || filename.replace(/\.xlsx$/i, '');
+
     return {
       id: `${filename.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
-      name: filename.replace(/\.xlsx$/i, ''),
+      name,
       filename,
-      sourceType: isUK ? 'UK' : filename.toLowerCase().includes('us') ? 'US' : 'CUSTOM',
-      currency: detectedCurrency,
+      sourceType: detectedRegion === 'UK' ? 'UK' : detectedRegion === 'USA' ? 'US' : 'CUSTOM',
+      region: detectedRegion,
+      currency,
       totalRows: activeOrders.length,
       uploadedAt: new Date().toISOString(),
       sheets,

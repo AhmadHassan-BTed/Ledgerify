@@ -5,7 +5,10 @@ import { useTheme } from './context/ThemeContext';
 import { Header } from './components/layout/Header';
 import { NavigationTabs } from './components/layout/NavigationTabs';
 import { FilterBar } from './components/layout/FilterBar';
-import { FileDropzoneModal } from './components/layout/FileDropzoneModal';
+import { FileManagerModal } from './components/layout/FileManagerModal';
+import { SettingsModal } from './components/layout/SettingsModal';
+import { CompareConfigModal } from './components/layout/CompareConfigModal';
+import { DrillDownModal } from './components/ui/DrillDownModal';
 import { ExecutiveView } from './components/views/ExecutiveView';
 import { FinanceView } from './components/views/FinanceView';
 import { InventoryView } from './components/views/InventoryView';
@@ -14,20 +17,48 @@ import { MarketingView } from './components/views/MarketingView';
 import { CreativeView } from './components/views/CreativeView';
 import { AdminDataQualityView } from './components/views/AdminDataQualityView';
 import { CompareView } from './components/views/CompareView';
-import { Sparkles, Loader2, AlertCircle, HelpCircle, ChevronDown, ChevronUp, Compass } from 'lucide-react';
+import { Logo } from './components/ui/Logo';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { ROLE_THEMES } from './styles/themes/roleThemes';
+import { ErrorBoundary } from './components/ui/ErrorBoundary';
 
 export const App: React.FC = () => {
-  const { activeDataset, isLoading, loadingMessage, error, loadSampleDataset } = useData();
-  const { filters } = useFilters();
+  const {
+    activeDataset,
+    isLoading,
+    loadingMessage,
+    error,
+    loadSampleDataset,
+    drillDownData,
+    closeDrillDown,
+    isDevMode,
+    setIsDevMode,
+    isCompareEnabled
+  } = useData();
+  const { filters, activeCurrency, setActiveTab } = useFilters();
   const { theme } = useTheme();
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [isGuideOpen, setIsGuideOpen] = useState(false);
+
+  const [isFileManagerOpen, setIsFileManagerOpen] = useState(false);
+  const [fileManagerInitialTab, setFileManagerInitialTab] = useState<'list' | 'upload'>('list');
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isCompareConfigOpen, setIsCompareConfigOpen] = useState(false);
+
+  const handleOpenFileManager = (initialTab: 'list' | 'upload' = 'list') => {
+    setFileManagerInitialTab(initialTab);
+    setIsFileManagerOpen(true);
+  };
 
   // Synchronize dynamic role color onto document root whenever activeTab changes
   useEffect(() => {
     document.documentElement.setAttribute('data-role', filters.activeTab);
   }, [filters.activeTab]);
+
+  // Gracefully return to Executive dashboard if compare mode is turned off while on the Comparison Matrix
+  useEffect(() => {
+    if (!isCompareEnabled && filters.activeTab === 'compare') {
+      setActiveTab('executive');
+    }
+  }, [isCompareEnabled, filters.activeTab, setActiveTab]);
 
   const currentRole = ROLE_THEMES[filters.activeTab] || ROLE_THEMES.executive;
 
@@ -57,92 +88,21 @@ export const App: React.FC = () => {
   return (
     <div
       data-role={filters.activeTab}
-      className="min-h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-[#0d0d11] dark:text-zinc-100 transition-colors duration-200"
+      className="min-h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-[#09090e] dark:text-zinc-100 transition-colors duration-200"
     >
-      {/* Header */}
-      <Header onOpenUploadModal={() => setIsUploadModalOpen(true)} />
+      {/* Header with Logo, Compare Gating, Ledger Manager & Settings */}
+      <Header
+        onOpenUploadModal={(tab) => handleOpenFileManager(tab || 'list')}
+        onOpenSettingsModal={() => setIsSettingsModalOpen(true)}
+        onOpenCompareModal={() => setIsCompareConfigOpen(true)}
+      />
 
-      {/* Main Expansive Content Container: Fluid and Breathing with generous padding */}
-      <main className="flex-1 max-w-[1720px] w-full mx-auto px-4 sm:px-8 lg:px-12 py-6 space-y-6">
-        {/* Navigation Tabs Bar */}
+      {/* Main Expansive Content Container: Clean & Balanced */}
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+        {/* Level 2: Unified Role Header & Navigation Tabs */}
         <NavigationTabs />
 
-        {/* Non-Technical Plain English Executive Guide Banner */}
-        <div className="rounded-2xl border border-slate-200/90 dark:border-obsidian-700/70 bg-white/90 dark:bg-obsidian-900/90 backdrop-blur-xl shadow-sm transition-all overflow-hidden">
-          <button
-            type="button"
-            onClick={() => setIsGuideOpen(prev => !prev)}
-            className="w-full px-5 py-3.5 flex items-center justify-between text-left hover:bg-slate-50/60 dark:hover:bg-obsidian-850/60 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className="w-7 h-7 rounded-xl flex items-center justify-center text-white text-xs font-bold shadow-sm"
-                style={{ backgroundColor: currentRole.primaryHex }}
-              >
-                <Compass className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-900 dark:text-zinc-100">
-                    {currentRole.name} Guide:
-                  </span>
-                  <span className="text-xs text-slate-600 dark:text-zinc-400">
-                    {currentRole.plainEnglishMission}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-zinc-400">
-              <span className="hidden sm:inline">
-                {isGuideOpen ? 'Hide Glossary' : 'Plain-English Help'}
-              </span>
-              {isGuideOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </div>
-          </button>
-
-          {isGuideOpen && (
-            <div className="px-5 pb-4 pt-1 border-t border-slate-100 dark:border-obsidian-800 text-xs text-slate-600 dark:text-zinc-300 animate-fade-in space-y-3">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-obsidian-850/70 border border-slate-200/60 dark:border-obsidian-750">
-                  <span className="font-bold text-slate-900 dark:text-zinc-100 block mb-1">
-                    💰 Net Revenue vs Target
-                  </span>
-                  <p className="text-[11px] leading-relaxed text-slate-500 dark:text-zinc-400">
-                    The total money paid into your store after refunds. Target Pace reveals whether current velocity meets your monthly goal.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-obsidian-850/70 border border-slate-200/60 dark:border-obsidian-750">
-                  <span className="font-bold text-slate-900 dark:text-zinc-100 block mb-1">
-                    👥 Customer Retention &amp; Repeat Buyers
-                  </span>
-                  <p className="text-[11px] leading-relaxed text-slate-500 dark:text-zinc-400">
-                    The percentage of buyers who placed 2 or more orders. Higher retention means you don&apos;t have to keep spending ad dollars to acquire new customers.
-                  </p>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-obsidian-850/70 border border-slate-200/60 dark:border-obsidian-750">
-                  <span className="font-bold text-slate-900 dark:text-zinc-100 block mb-1">
-                    📦 Average Order Value (AOV)
-                  </span>
-                  <p className="text-[11px] leading-relaxed text-slate-500 dark:text-zinc-400">
-                    Total Revenue divided by order count. Boost AOV by offering bundle discovery sets or volume incentives.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1 text-[11px] text-slate-500 dark:text-zinc-400">
-                <HelpCircle className="w-3.5 h-3.5 text-role flex-shrink-0" />
-                <span>
-                  Tip: Hover or click on the <HelpCircle className="inline w-3 h-3 text-slate-400" /> icon beside any metric card for a simple 1-sentence breakdown!
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Filters Toolbar (not shown in Compare mode if comparing distinct sets) */}
+        {/* Level 3: Unified Filtering Toolbar (Search, Sheets, Timeframe, Status) */}
         {filters.activeTab !== 'compare' && <FilterBar />}
 
         {/* Global Loading Spinner / Status */}
@@ -170,20 +130,20 @@ export const App: React.FC = () => {
           </div>
         )}
 
-        {/* View Switcher Container */}
+        {/* View Switcher Container with Error Boundary */}
         {!isLoading && activeDataset && (
-          <div className="animate-fade-in">
-            {renderActiveView()}
-          </div>
+          <ErrorBoundary fallbackTitle="Dashboard View Encountered an Error">
+            <div className="animate-fade-in">
+              {renderActiveView()}
+            </div>
+          </ErrorBoundary>
         )}
 
-        {/* Fallback Empty State */}
+        {/* Fallback Empty State with Logo */}
         {!isLoading && !activeDataset && (
           <div className="py-20 text-center max-w-md mx-auto space-y-4">
-            <div className="w-16 h-16 rounded-3xl bg-role-subtle border border-role-subtle flex items-center justify-center text-role mx-auto">
-              <Sparkles className="w-8 h-8" />
-            </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">
+            <Logo size={64} glow={true} className="mx-auto" />
+            <h3 className="text-lg font-extrabold text-slate-900 dark:text-zinc-100">
               No Active Shopify Ledger Loaded
             </h3>
             <p className="text-xs text-slate-500 dark:text-zinc-400">
@@ -192,26 +152,58 @@ export const App: React.FC = () => {
             <div className="flex items-center justify-center gap-2 pt-2">
               <button
                 type="button"
-                onClick={() => loadSampleDataset('UK')}
-                className="px-4 py-2 rounded-xl bg-role text-white font-semibold text-xs shadow-role-glow hover:opacity-90 transition-opacity"
+                onClick={() => handleOpenFileManager('upload')}
+                className="px-5 py-2.5 rounded-xl bg-role text-white font-semibold text-xs shadow-role-glow hover:opacity-90 transition-opacity"
               >
-                Load Sample UK Orders
+                Upload Excel Ledger
               </button>
             </div>
           </div>
         )}
       </main>
 
-      {/* Upload Modal */}
-      <FileDropzoneModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
+      {/* Ledger & File Manager Modal */}
+      <FileManagerModal
+        isOpen={isFileManagerOpen}
+        initialTab={fileManagerInitialTab}
+        onClose={() => setIsFileManagerOpen(false)}
       />
 
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        isDevMode={isDevMode}
+        setIsDevMode={setIsDevMode}
+        onOpenFileManager={() => handleOpenFileManager('list')}
+      />
+
+      {/* Compare Configuration Modal */}
+      <CompareConfigModal
+        isOpen={isCompareConfigOpen}
+        onClose={() => setIsCompareConfigOpen(false)}
+        onApplyAndOpenMatrix={() => {
+          setIsCompareConfigOpen(false);
+          setActiveTab('compare');
+        }}
+      />
+
+      {/* Drill-Down Dossier Modal */}
+      {drillDownData && (
+        <ErrorBoundary fallbackTitle="Drill-Down Dossier Modal Encountered an Error">
+          <DrillDownModal
+            data={drillDownData}
+            currencySymbol={activeCurrency}
+            onClose={closeDrillDown}
+          />
+        </ErrorBoundary>
+      )}
+
       {/* Footer */}
-      <footer className="mt-auto border-t border-slate-200 dark:border-obsidian-850 py-4 px-6 text-center text-xs text-slate-500 dark:text-zinc-400 transition-colors">
-        <div className="max-w-[1720px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+      <footer className="mt-auto border-t border-slate-200 dark:border-obsidian-850 py-4 px-4 sm:px-6 lg:px-8 text-center text-xs text-slate-500 dark:text-zinc-400 transition-colors">
+        <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
+            <Logo size={18} glow={false} />
             <span className="font-semibold text-slate-800 dark:text-zinc-200">Ledgerify</span>
             <span>·</span>
             <span>Shopify Multi-Sheet Ledger Intelligence</span>
@@ -223,7 +215,7 @@ export const App: React.FC = () => {
             <span>·</span>
             <span className="capitalize">Theme: {theme} Mode</span>
             <span>·</span>
-            <span>100% In-Browser Client Side Processing</span>
+            <span>100% In-Browser Privacy</span>
           </div>
         </div>
       </footer>

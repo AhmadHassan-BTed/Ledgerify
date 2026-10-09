@@ -27,6 +27,40 @@ export interface DailyRevenueItem {
   orders: number;
 }
 
+export interface TopCustomerItem {
+  name: string;
+  email: string;
+  orderCount: number;
+  totalSpend: number;
+  status: 'VIP' | 'Loyal' | 'First-time';
+  statusBadge: 'Achieved' | 'On-Process' | 'VIP';
+  avatarInitials: string;
+  avatarColor: string;
+  firstOrderDate: string;
+  lastOrderDate: string;
+  orders: NormalizedOrder[];
+}
+
+export interface ExecutiveMetrics {
+  totalRevenue: number;
+  momRevenueGrowth: number;
+  momVolumeGrowth: number;
+  hasMomComparison?: boolean;
+  prevMonthLabel?: string;
+  currMonthLabel?: string;
+  totalCustomers: number;
+  returningCustomers: number;
+  retentionRate: number;
+  monthlyTarget: number;
+  targetProgressPercent: number;
+  topMarketName: string;
+  topMarketRevenue: number;
+  topMarketShare: number;
+  newVsReturningSplit: { name: string; count: number; percentage: number; color: string }[];
+  topCustomers: TopCustomerItem[];
+  topFragrancesSummary: { name: string; unitsSold: number; revenue: number; share: number }[];
+}
+
 export interface FinanceMetrics {
   totalRevenue: number;
   aov: number;
@@ -37,21 +71,10 @@ export interface FinanceMetrics {
   monthlyRevenue: MonthlyRevenueItem[];
   stackedMonthlyCategory: StackedMonthlyCategoryItem[];
   dailyRevenueSeries: DailyRevenueItem[];
-}
-
-export interface ExecutiveMetrics {
-  totalRevenue: number;
-  momRevenueGrowth: number;
-  momVolumeGrowth: number;
-  totalCustomers: number;
-  returningCustomers: number;
-  retentionRate: number;
-  monthlyTarget: number;
-  targetProgressPercent: number;
-  topMarketName: string;
-  topMarketRevenue: number;
-  topMarketShare: number;
-  newVsReturningSplit: { name: string; count: number; percentage: number; color: string }[];
+  medianOrderValue?: number;
+  p75OrderValue?: number;
+  p90OrderValue?: number;
+  stdDeviation?: number;
 }
 
 export interface FragranceStockItem {
@@ -149,30 +172,69 @@ export interface MarketingMetrics {
   cohortRetention: CohortMonthData[];
 }
 
+export interface MultiDatasetSummary {
+  dataset: Dataset;
+  totalRevenue: number;
+  totalOrders: number;
+  aov: number;
+  retentionRate: number;
+  refundRate: number;
+  refundLiability: number;
+  healthScore: number;
+  topFragrance: string;
+  topFragranceUnits: number;
+  currency: string;
+  color: string;
+}
+
+export interface MultiSideBySideRow {
+  metric: string;
+  values: {
+    datasetId: string;
+    datasetName: string;
+    region: string;
+    currency: string;
+    formattedValue: string;
+    rawValue: number;
+    deltaVsBaseline?: string;
+    isPositive?: boolean;
+  }[];
+}
+
+export interface MultiMonthlyOverlayItem {
+  month: string;
+  [key: string]: any; // revenue_<id>, orders_<id>
+}
+
 export interface CompareMetrics {
+  datasets: Dataset[];
+  summaries: MultiDatasetSummary[];
+  sideBySideRows: MultiSideBySideRow[];
+  monthlyOverlay: MultiMonthlyOverlayItem[];
+  categoryComparison: {
+    category: string;
+    [key: string]: any; // <id>: amount
+  }[];
+
+  // Dual-dataset backwards compatibility:
   datasetA: Dataset;
   datasetB: Dataset;
   revenueDeltaPercent: number;
   aovDeltaPercent: number;
   ordersDeltaPercent: number;
   retentionDeltaPercent: number;
-  sideBySideRows: {
-    metric: string;
-    valueA: string;
-    valueB: string;
-    diff: string;
-    isPositive: boolean;
-  }[];
-  monthlyOverlay: {
-    month: string;
-    revenueA: number;
-    revenueB: number;
-    ordersA: number;
-    ordersB: number;
-  }[];
-  categoryComparison: {
-    category: string;
-    datasetA: number;
-    datasetB: number;
-  }[];
 }
+
+// Drill-Down Context & Modal Data
+export type DrillDownType = 'category' | 'customer' | 'day' | 'fragrance' | 'revenue' | 'orders' | 'target';
+
+export interface DrillDownData {
+  type: DrillDownType;
+  title: string;
+  subtitle: string;
+  badge?: string;
+  summaryStats?: { label: string; value: string | number }[];
+  orders: NormalizedOrder[];
+  extraContent?: React.ReactNode;
+}
+
