@@ -1,0 +1,387 @@
+```python
+import os
+print(os.listdir('.'))
+if os.path.exists('mnt/data'):
+    print('mnt/data:', os.listdir('mnt/data'))
+
+
+```
+
+```text
+['UK Orders.xlsx']
+
+
+```
+
+```python
+import pandas as pd
+
+xls = pd.ExcelFile('UK Orders.xlsx')
+print("Sheets:", xls.sheet_names)
+
+for sheet in xls.sheet_names:
+    df = pd.read_excel('UK Orders.xlsx', sheet_name=sheet)
+    print(f"\n--- Sheet: {sheet} ---")
+    print("Columns:", df.columns.tolist())
+    print("Head:\n", df.head(2))
+
+
+```
+
+```text
+Sheets: ['Summary', 'Ledger', 'Trio & Discovery', 'Aug - Ledger', 'Aug - Summary', 'Sep - Ledger', 'Sep - Summary', 'Oct - Ledger', 'Oct - Summary', 'Returning Cust.', 'Refunds']
+
+--- Sheet: Summary ---
+Columns: ['Unnamed: 0', 'Unnamed: 1', 'Unnamed: 2', 'Unnamed: 3']
+Head:
+    Unnamed: 0                                                              Unnamed: 1  Unnamed: 2  Unnamed: 3
+0         NaN                                Scent Spired — UK All-Time Order Summary         NaN         NaN
+1         NaN  Testing/dev orders and $0-value orders excluded from all figures below         NaN         NaN
+
+--- Sheet: Ledger ---
+Columns: ['Order #', 'Customer Name', 'Email', 'City', 'Province/State', 'Country', 'Fragrance(s) Ordered', 'Order Quantity', 'Order Value', 'Status', 'Date', 'Has Trio', 'Has Discovery', 'Trio Qty', 'Trio Amount', 'Discovery Qty', 'Discovery Amount', '50ml Qty', '50ml Amount', '100ml Qty', '100ml Amount']
+Head:
+   Order #     Customer Name                     Email      City Province/State Country                                         Fragrance(s) Ordered  Order Quantity  Order Value Status        Date  Has Trio  Has Discovery  Trio Qty  Trio Amount  Discovery Qty  Discovery Amount  50ml Qty  50ml Amount  100ml Qty  100ml Amount
+0   #1782  Chukwuma Obinatu   obinatuchucks@yahoo.com  Rochdale            ENG      GB                        Visionary - 50ml; Silk Odyssey - 50ml               2        36.97   paid  2026-10-07     False          False         0          0.0              0               0.0         2        31.98          0          0.00
+1   #1781      Asiyah Sabir  asiyahsabir411@gmail.com  rochdale            ENG      GB  Supreme Power - 100ml; Mirage - 100ml; Silk Odyssey - 100ml               3        65.97   paid  2026-10-06     False          False         0          0.0              0               0.0         0         0.00          3         65.97
+
+--- Sheet: Trio & Discovery ---
+Columns: ['Unnamed: 0', 'Unnamed: 1', 'Unnamed: 2', 'Unnamed: 3', 'Unnamed: 4', 'Unnamed: 5', 'Unnamed: 6', 'Unnamed: 7', 'Unnamed: 8']
+Head:
+    Unnamed: 0                       Unnamed: 1 Unnamed: 2 Unnamed: 3 Unnamed: 4 Unnamed: 5 Unnamed: 6 Unnamed: 7 Unnamed: 8
+0         NaN  Trio Set & Discovery Set Orders        NaN        NaN        NaN        NaN        NaN        NaN        NaN
+1         NaN                              NaN        NaN        NaN        NaN        NaN        NaN        NaN        NaN
+
+--- Sheet: Aug - Ledger ---
+Columns: ['Order #', 'Customer Name', 'Email', 'City', 'Province/State', 'Country', 'Fragrance(s) Ordered', 'Order Quantity', 'Order Value', 'Status', 'Date', 'Has Trio', 'Has Discovery', 'Trio Qty', 'Trio Amount', 'Discovery Qty', 'Discovery Amount', '50ml Qty', '50ml Amount', '100ml Qty', '100ml Amount']
+Head:
+   Order #      Customer Name                    Email           City Province/State Country    Fragrance(s) Ordered  Order Quantity  Order Value Status        Date  Has Trio  Has Discovery  Trio Qty  Trio Amount  Discovery Qty  Discovery Amount  50ml Qty  50ml Amount  100ml Qty  100ml Amount
+0   #1677  Priyanka Bhardwaj       pb.daiji@gmail.com    Northampton            ENG      GB  Timeless Grace - 100ml               1        25.98   paid  2026-08-30     False          False         0          0.0              0               0.0         0          0.0          1         20.99
+1   #1676    Mohamed Elshakh  mohagadora101@gmail.com  Middlesbrough            ENG      GB          Fierce - 100ml               1        25.98   paid  2026-08-30     False          False         0          0.0              0               0.0         0          0.0          1         20.99
+
+--- Sheet: Aug - Summary ---
+Columns: ['Unnamed: 0', 'Unnamed: 1', 'Unnamed: 2', 'Unnamed: 3']
+Head:
+    Unnamed: 0                                                              Unnamed: 1  Unnamed: 2  Unnamed: 3
+0         NaN                                   Scent Spired — UK August 2026 Summary         NaN         NaN
+1         NaN  Testing/dev orders and $0-value orders excluded from all figures below         NaN         NaN
+
+--- Sheet: Sep - Ledger ---
+Columns: ['Order #', 'Customer Name', 'Email', 'City', 'Province/State', 'Country', 'Fragrance(s) Ordered', 'Order Quantity', 'Order Value', 'Status', 'Date', 'Has Trio', 'Has Discovery', 'Trio Qty', 'Trio Amount', 'Discovery Qty', 'Discovery Amount', '50ml Qty', '50ml Amount', '100ml Qty', '100ml Amount']
+Head:
+   Order #   Customer Name                    Email    City Province/State Country                                        Fragrance(s) Ordered  Order Quantity  Order Value Status        Date  Has Trio  Has Discovery  Trio Qty  Trio Amount  Discovery Qty  Discovery Amount  50ml Qty  50ml Amount  100ml Qty  100ml Amount
+0   #1775  Mohammed Irfan       i-13@hotmail.co.uk   Luton            ENG      GB  Silk Odyssey - 100ml; Addiction - 100ml; Visionary - 100ml               3        65.97   paid  2026-09-30     False          False         0          0.0              0               0.0         0          0.0          3         65.97
+1   #1774      Sean Green  sean01green@hotmail.com  London            ENG      GB                                         Black Spice - 100ml               1        26.98   paid  2026-09-30     False          False         0          0.0              0               0.0         0          0.0          1         21.99
+
+--- Sheet: Sep - Summary ---
+Columns: ['Unnamed: 0', 'Unnamed: 1', 'Unnamed: 2', 'Unnamed: 3']
+Head:
+    Unnamed: 0                                                              Unnamed: 1  Unnamed: 2  Unnamed: 3
+0         NaN                               Scent Spired — UK September 2026 Summary          NaN         NaN
+1         NaN  Testing/dev orders and $0-value orders excluded from all figures below         NaN         NaN
+
+--- Sheet: Oct - Ledger ---
+Columns: ['Order #', 'Customer Name', 'Email', 'City', 'Province/State', 'Country', 'Fragrance(s) Ordered', 'Order Quantity', 'Order Value', 'Status', 'Date', 'Has Trio', 'Has Discovery', 'Trio Qty', 'Trio Amount', 'Discovery Qty', 'Discovery Amount', '50ml Qty', '50ml Amount', '100ml Qty', '100ml Amount']
+Head:
+   Order #     Customer Name                     Email      City Province/State Country                                         Fragrance(s) Ordered  Order Quantity  Order Value Status        Date  Has Trio  Has Discovery  Trio Qty  Trio Amount  Discovery Qty  Discovery Amount  50ml Qty  50ml Amount  100ml Qty  100ml Amount
+0   #1782  Chukwuma Obinatu   obinatuchucks@yahoo.com  Rochdale            ENG      GB                        Visionary - 50ml; Silk Odyssey - 50ml               2        36.97   paid  2026-10-07     False          False         0            0              0                 0         2        31.98          0          0.00
+1   #1781      Asiyah Sabir  asiyahsabir411@gmail.com  rochdale            ENG      GB  Supreme Power - 100ml; Mirage - 100ml; Silk Odyssey - 100ml               3        65.97   paid  2026-10-06     False          False         0            0              0                 0         0         0.00          3         65.97
+
+--- Sheet: Oct - Summary ---
+Columns: ['Unnamed: 0', 'Unnamed: 1', 'Unnamed: 2', 'Unnamed: 3']
+Head:
+    Unnamed: 0                                                              Unnamed: 1  Unnamed: 2  Unnamed: 3
+0         NaN                            Scent Spired — UK October 2026 Summary (MTD)         NaN         NaN
+1         NaN  Testing/dev orders and $0-value orders excluded from all figures below         NaN         NaN
+
+--- Sheet: Returning Cust. ---
+Columns: ['Unnamed: 0', 'Unnamed: 1', 'Unnamed: 2', 'Unnamed: 3', 'Unnamed: 4', 'Unnamed: 5', 'Unnamed: 6', 'Unnamed: 7', 'Unnamed: 8', 'Unnamed: 9']
+Head:
+   Unnamed: 0                                                                               Unnamed: 1 Unnamed: 2 Unnamed: 3 Unnamed: 4 Unnamed: 5 Unnamed: 6 Unnamed: 7 Unnamed: 8 Unnamed: 9
+0        NaN                                                                 Customer Order Frequency        NaN        NaN        NaN        NaN        NaN        NaN        NaN        NaN
+1        NaN  Based on email address; orders without an email, and $0/test orders, are excluded here.        NaN        NaN        NaN        NaN        NaN        NaN        NaN        NaN
+
+--- Sheet: Refunds ---
+Columns: ['Unnamed: 0', 'Unnamed: 1', 'Unnamed: 2', 'Unnamed: 3', 'Unnamed: 4', 'Unnamed: 5']
+Head:
+    Unnamed: 0                                                                                      Unnamed: 1 Unnamed: 2 Unnamed: 3 Unnamed: 4 Unnamed: 5
+0         NaN                                                                                 Refunded Orders        NaN        NaN        NaN        NaN
+1         NaN  No "return reason" field exists in this export; built from Financial Status + Refunded Amount.        NaN        NaN        NaN        NaN
+
+
+```
+
+```python
+df_ledger = pd.read_excel('UK Orders.xlsx', sheet_name='Ledger')
+# Look at unique values or patterns to give better suggestions
+print("Total Orders:", len(df_ledger))
+print("Total Revenue:", df_ledger['Order Value'].sum())
+print("Unique Fragrances (sample):", df_ledger['Fragrance(s) Ordered'].dropna().head(5).tolist())
+print("Geographic reach:", df_ledger['City'].nunique(), "cities")
+
+
+```
+
+```text
+Total Orders: 540
+Total Revenue: 18868.29
+Unique Fragrances (sample): ['Visionary - 50ml; Silk Odyssey - 50ml', 'Supreme Power - 100ml; Mirage - 100ml; Silk Odyssey - 100ml', 'Classic Attire - 50ml', 'Millionaire - 50ml; Steely Temptation - 50ml', 'Eternal Verde - 100ml; Ocean Drift - 100ml']
+Geographic reach: 219 cities
+
+
+```
+
+Designing a robust React/TypeScript dashboard to parse and visualize Shopify Excel exports is an excellent project. Since you'll be hosting it on GitHub Pages, it will be a client-side application. You will likely use a library like `xlsx` (SheetJS) to parse the files locally in the user's browser.
+
+Based on my analysis of your **"UK Orders.xlsx"** file, the most critical architectural decision you can make is to **ignore the "Summary" sheets entirely**. Summary sheets contain merged cells, blank rows, and formatting that break easily. **You should configure your software to only look for and parse the "Ledger" sheets** (e.g., `Ledger`, `Aug - Ledger`, etc.). The raw Ledger data contains everything you need to calculate your own summaries dynamically.
+
+To ensure **robustness (so the app doesn't break if columns are rearranged)**, your TypeScript parser should map data using **Column Header Names** (e.g., `"Order Value"`, `"City"`) rather than column indexes (e.g., Column 8).
+
+Here is a breakdown of the meaningful insights, functional requirements, and visualizations you should build for each specific team based on the data available in your export.
+
+---
+
+### 1. Finance Team
+
+**Goal:** Track cash flow, revenue breakdowns, and financial liabilities.
+
+* **Meaningful Insights:**
+* **Total Revenue & AOV (Average Order Value):** Calculated by summing the `Order Value` column and dividing by the total number of orders.
+* **Revenue by Product Category:** Sum of `Trio Amount`, `Discovery Amount`, `50ml Amount`, and `100ml Amount`.
+* **Refund Liability:** Extracted from the `Status` column (e.g., refunded/partially refunded) to show lost revenue.
+
+
+* **Visualizations:**
+* **Top-level KPI Cards:** Total Revenue, AOV, Total Refunds.
+* **Line Chart:** Daily or Monthly Revenue over time (using the `Date` and `Order Value` columns).
+* **Stacked Bar Chart:** Revenue breakdown by product size (50ml vs 100ml vs Sets) per month.
+
+
+
+### 2. CEO / Executives
+
+**Goal:** High-level health of the business and quick growth metrics.
+
+* **Meaningful Insights:**
+* **Month-over-Month (MoM) Growth:** How the current month compares to the previous month in revenue and volume.
+* **Customer Retention Rate:** Percentage of orders from returning customers (identifiable by counting duplicate `Email` addresses in the Ledger).
+* **Top Market Penetration:** The best-performing countries or macro-regions.
+
+
+* **Visualizations:**
+* **Big Number KPI Cards (with trend indicators):** E.g., "£18,868 (+12% vs last month)".
+* **Gauge Charts:** Tracking progress against a monthly revenue or order target.
+* **Pie Chart:** New vs. Returning Customers.
+
+
+
+### 3. Inventory Manager
+
+**Goal:** Stock forecasting, product popularity, and supply chain management.
+
+* **Meaningful Insights:**
+* **Units Sold by Size:** Summing `Trio Qty`, `Discovery Qty`, `50ml Qty`, and `100ml Qty`.
+* **Specific Fragrance Velocity:** You will need to write a script to parse the `Fragrance(s) Ordered` column (e.g., splitting "Visionary - 50ml; Silk Odyssey - 50ml" by the semicolon) to count exactly how many bottles of *Visionary* vs *Silk Odyssey* were sold.
+
+
+* **Visualizations:**
+* **Horizontal Bar Chart:** Top 10 selling individual fragrances.
+* **Donut Chart:** Overall volume share (Sets vs 50ml vs 100ml).
+* **Data Table:** A sortable table listing every specific fragrance, total units sold, and the date of the last sale to help with restocking orders.
+
+
+
+### 4. Overviewer (Operations / General Manager)
+
+**Goal:** Monitor daily operations, fulfillment bottlenecks, and logistics.
+
+* **Meaningful Insights:**
+* **Fulfillment Volume:** Number of orders placed per day of the week to staff the warehouse accordingly.
+* **Geographic Shipping Hotspots:** Grouping by the `City` and `Province/State` columns (e.g., seeing that Rochdale or London have high volume).
+* **Order Complexity:** The average `Order Quantity` per package (larger packages take longer to pack).
+
+
+* **Visualizations:**
+* **Heatmap / Calendar View:** Showing which days of the week get the most orders.
+* **Map / Choropleth Chart:** A geographic map highlighting regions with the most orders (e.g., England vs. Scotland vs. Wales).
+* **Data Table:** Unfulfilled, refunded, or pending orders needing attention.
+
+
+
+### 5. Technical Person / Admin
+
+**Goal:** Data integrity, bug tracking, and export health.
+
+* **Meaningful Insights:**
+* **Missing Data Checks:** Flagging orders with missing `Email`, missing `City`, or missing `Fragrance(s) Ordered`.
+* **Anomaly Detection:** Highlighting orders with an `Order Value` of $0.00 or unusually high quantities (e.g., 50+ items).
+
+
+* **Visualizations:**
+* **Health Dashboard (Traffic Lights):** Green for clean data, Red if the uploaded file is missing required columns.
+* **Sortable Table:** "Flagged Orders" containing specific Order #s (like #1782) that have missing fields so they can be fixed in Shopify.
+
+
+
+### 6. Graphics / Creative Team
+
+**Goal:** Knowing what to feature in visual ads and social media content.
+
+* **Meaningful Insights:**
+* **Hero Products:** The absolute best-selling scent (so they know which bottle to photograph).
+* **Aesthetic Trends:** If "Trio Sets" are selling rapidly, they need to create more graphics featuring the Trio packaging.
+
+
+* **Visualizations:**
+* **Word Cloud:** Using the parsed names from `Fragrance(s) Ordered` (larger words = higher sales).
+* **Image Grid / Big Cards:** Showcasing the Top 3 products of the month.
+
+
+
+### 7. SEO & Marketing Team
+
+**Goal:** Keyword targeting, email campaign segmentation, and geo-targeted ad spending.
+
+* **Meaningful Insights:**
+* **Geo-Targeting Data:** The `City` column shows exactly where demand is highest (e.g., 219 unique cities in the provided file). Marketing can run targeted Google/Facebook ads in those specific cities.
+* **Bundle Behaviors / Cross-Selling:** Analyzing what fragrances are bought together. If people frequently buy "Supreme Power" and "Mirage" together, Marketing can create an email campaign bundling them.
+* **Customer Lifetime Value (LTV) Indicators:** Frequency of returning customers by month.
+
+
+* **Visualizations:**
+* **Network Graph or Matrix:** Showing product correlations (which items are most frequently bought in the same cart).
+* **Bar Chart:** Top 15 Cities by Revenue.
+* **Cohort Table:** Showing how many users who bought in August returned in September.
+
+
+
+---
+
+### Designing the "Compare" Feature
+
+To compare files (e.g., UK vs. USA, or Q1 vs Q2), your React state should accept an array of uploaded files.
+
+* **UI Layout:** Create a split-screen or toggle-based UI.
+* **Delta Metrics:** Whenever comparing, the software should automatically calculate the percentage difference for key metrics. If the UK file has an AOV of £35 and the USA file has an AOV of $50, show the raw numbers alongside a `+X%` badge.
+* **Overlay Charts:** Use Multi-line charts (e.g., Chart.js or Recharts) where Line 1 is Dataset A (UK) and Line 2 is Dataset B (USA) plotted across the same X-axis (days 1-30 of the month).
+
+### Summary of Tech Stack Recommendations:
+
+* **Framework:** React (Next.js or Vite) + TypeScript.
+* **Hosting:** GitHub Pages (requires standard static export).
+* **Excel Parsing:** `xlsx` (SheetJS) — specifically reading the `Ledger` sheet and converting it to JSON using `XLSX.utils.sheet_to_json`. This automatically maps column headers to JSON keys, fulfilling your robustness requirement.
+* **Visualizations:** `Recharts` or `Chart.js` (both are excellent, highly customizable, and responsive for React).
+
+
+To make this dashboard fast, crash-proof, and capable of analyzing multiple large Shopify exports directly in the browser on GitHub Pages, here is the best modern tech stack to build it.
+
+---
+
+### 1. Core Framework & Build Tool
+
+* **Vite + React (TypeScript):** Vite offers instant HMR and optimized static production builds (`vite build`), which export straight into a `/dist` folder ready for GitHub Pages.
+* **TypeScript (Strict Mode):** Essential for defining data contracts across messy spreadsheets so mismatched types don't cause runtime errors.
+
+### 2. High-Performance Data Engine (The Game Changer)
+
+Standard JavaScript loops (`.filter()`, `.reduce()`) choke when crunching tens of thousands of rows across multiple files and dates.
+
+* **DuckDB-Wasm (In-Browser SQL Engine):**
+* **Why it makes you powerful:** DuckDB runs directly inside the browser using WebAssembly. You can load your parsed Excel sheets into DuckDB tables and execute analytical SQL queries (`GROUP BY`, `SUM`, `JOIN`, Window functions) across multiple files in milliseconds.
+* **Compare Feature:** Joining the UK dataset and US dataset via SQL (`FULL OUTER JOIN` or `UNION ALL`) becomes trivial and instantaneous.
+
+
+* **Web Workers:** Run the Excel parsing and heavy metric calculations in a background thread so the user interface never freezes when someone drops in 5 workbooks at once.
+
+### 3. Crash-Proof File Ingestion & Parsing
+
+Spreadsheets frequently have rearranged columns, misspelled headers, or missing cells.
+
+* **SheetJS (`xlsx`):** The industry standard for reading `.xlsx` files into raw JSON rows in memory.
+* **Zod (Schema Validation & Normalization):**
+* Create a resilient schema adapter. If Shopify names a column `"Order Value"` in one export, `"Total"` in another, or moves it from column 8 to column 2, a Zod pre-processor maps them to a normalized interface:
+```ts
+// Example normalizer mapping
+const normalizeHeader = (key: string) => key.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+
+```
+
+
+* Missing fields get populated with sensible defaults (`0`, `""`, or `null`) instead of crashing the app with `Cannot read property of undefined`.
+
+
+
+### 4. Client-Side Storage (Zero Backend Needed)
+
+* **Dexie.js (IndexedDB Wrapper):**
+* When a user uploads their UK and US workbooks, save the parsed datasets into the browser’s **IndexedDB**.
+* When the user reloads or navigates away, the data remains instantly accessible without requiring them to re-upload the files each time.
+
+
+
+### 5. UI, Tables & Visualizations
+
+* **UI Component Layer:** **Tailwind CSS + shadcn/ui (Radix Primitives)**
+* Gives you accessible tabs (one tab for Finance, one for CEO, etc.), modals, date pickers, dropdowns, and dark mode out of the box.
+
+
+* **Data Grid:** **TanStack Table v8 (React Table) + TanStack Virtual**
+* Headless table architecture with column sorting, fuzzy search, multi-column filtering, and CSV export.
+* Virtualized rendering ensures that a table with 10,000+ orders renders only the visible rows, maintaining 60 FPS scrolling.
+
+
+* **Charts & Analytics:** **Apache ECharts (`echarts-for-react`)**
+* While Recharts is common, **ECharts** is far more capable for an executive dashboard:
+* Handles hundreds of thousands of data points without dropping frames.
+* Built-in support for **heatmaps** (order volume by day/hour), **geo-maps/choropleths** (UK/US sales by region), **donut charts**, and **multi-series comparative lines** with zoom sliders.
+
+
+
+
+
+---
+
+### Recommended Project Architecture
+
+```text
+src/
+├── app/                  # Layout, multi-tab routing (Finance, CEO, Inventory, etc.)
+├── components/
+│   ├── charts/           # ECharts wrappers (RevenueChart, GeoMap, Heatmap)
+│   ├── tables/           # TanStack virtualized order grids
+│   └── ui/               # shadcn/ui components (Tabs, Cards, Dropdowns)
+├── core/
+│   ├── parser/           # SheetJS worker + Zod schema sanitizers
+│   ├── db/               # DuckDB-Wasm / Dexie.js storage & queries
+│   └── analytics/        # Business logic calculators (AOV, MoM, Bundles)
+└── types/                # Normalized Order, Customer, and Fragrance types
+
+```
+
+### Deployment to GitHub Pages
+
+Set up a simple GitHub Actions workflow (`.github/workflows/deploy.yml`):
+
+```yaml
+name: Deploy Dashboard
+on:
+  push:
+    branches: [main]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+      - uses: actions/deploy-pages@v4
+
+```
+
+Theme: we want it to inspired it from the Obsidian theme. how the app obsidian theme is.
