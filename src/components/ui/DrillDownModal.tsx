@@ -48,14 +48,14 @@ export const DrillDownModal: React.FC<DrillDownModalProps> = ({
   onClose
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusTab, setStatusTab] = useState<'all' | 'paid' | 'refunded' | 'high_value'>('all');
+  const [statusTab, setStatusTab] = useState<'all' | 'paid' | 'refunded' | 'high_value' | 'repeat'>('all');
   const [sortKey, setSortKey] = useState<keyof NormalizedOrder>('date');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [page, setPage] = useState(1);
   const pageSize = 8;
 
   // Unconditional computation of orders and filtered subsets
-  const { filteredOrders, basketTiers, statusCounts, totalOrderValue, avgBasketValue, customerProfile, fragranceProfile, categoryProfile, dayProfile, geoCityProfile } = useMemo(() => {
+  const { filteredOrders, basketTiers, statusCounts, totalOrderValue, avgBasketValue, customerProfile, fragranceProfile, categoryProfile, dayProfile, geoCityProfile, repeatOrderCount, repeatBuyerCount } = useMemo(() => {
     if (!data || !data.orders) {
       return {
         filteredOrders: [],
@@ -67,7 +67,9 @@ export const DrillDownModal: React.FC<DrillDownModalProps> = ({
         fragranceProfile: null,
         categoryProfile: null,
         dayProfile: null,
-        geoCityProfile: null
+        geoCityProfile: null,
+        repeatOrderCount: 0,
+        repeatBuyerCount: 0
       };
     }
 
@@ -139,6 +141,13 @@ export const DrillDownModal: React.FC<DrillDownModalProps> = ({
     const topBuyersList = Object.values(buyerFrequency)
       .sort((a, b) => b.totalSpend - a.totalSpend);
 
+    const repeatOrderCount = all.filter(o => {
+      const k = (o.email || o.customerName || 'Anonymous').toLowerCase().trim();
+      return (buyerFrequency[k]?.count || 1) >= 2;
+    }).length;
+
+    const repeatBuyerCount = Object.values(buyerFrequency).filter(b => b.count >= 2).length;
+
     // Apply modal search & quick status filter
     let list = all;
 
@@ -148,6 +157,11 @@ export const DrillDownModal: React.FC<DrillDownModalProps> = ({
       list = list.filter(o => o.isRefunded || o.isPartiallyRefunded || o.isCancelled);
     } else if (statusTab === 'high_value') {
       list = list.filter(o => o.orderValue >= 75);
+    } else if (statusTab === 'repeat') {
+      list = list.filter(o => {
+        const k = (o.email || o.customerName || 'Anonymous').toLowerCase().trim();
+        return (buyerFrequency[k]?.count || 1) >= 2;
+      });
     }
 
     if (searchTerm.trim()) {
@@ -218,7 +232,9 @@ export const DrillDownModal: React.FC<DrillDownModalProps> = ({
       geoCityProfile: {
         cities: Object.entries(cityCounts).sort((a, b) => b[1] - a[1]).slice(0, 5),
         topScents: topScentsList.slice(0, 4)
-      }
+      },
+      repeatOrderCount,
+      repeatBuyerCount
     };
   }, [data, searchTerm, statusTab, sortKey, sortDir]);
 
@@ -647,7 +663,7 @@ export const DrillDownModal: React.FC<DrillDownModalProps> = ({
                       setSearchTerm(e.target.value);
                       setPage(1);
                     }}
-                    placeholder="Search order #, customer, city..."
+                    placeholder="Search email, customer name, order #..."
                     className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-obsidian-850 border border-slate-200 dark:border-obsidian-700/80 rounded-xl text-slate-900 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-role transition-colors"
                   />
                 </div>
@@ -676,6 +692,20 @@ export const DrillDownModal: React.FC<DrillDownModalProps> = ({
                   >
                     Paid ({statusCounts.paid})
                   </button>
+                  {repeatOrderCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => { setStatusTab('repeat'); setPage(1); }}
+                      className={`px-2.5 py-1 rounded-lg font-medium transition-all ${
+                        statusTab === 'repeat'
+                          ? 'bg-role font-bold text-white shadow-sm'
+                          : 'text-slate-600 dark:text-zinc-400'
+                      }`}
+                      title={`${repeatOrderCount} orders from ${repeatBuyerCount} repeat buyers`}
+                    >
+                      2+ Orders ({repeatOrderCount})
+                    </button>
+                  )}
                   {statusCounts.refunded > 0 && (
                     <button
                       type="button"

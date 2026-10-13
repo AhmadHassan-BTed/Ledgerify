@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   DollarSign,
   TrendingUp,
@@ -14,7 +14,11 @@ import {
   UserCheck,
   UserPlus,
   BarChart3,
-  GitCompare
+  GitCompare,
+  Search,
+  Mail,
+  Filter,
+  X
 } from 'lucide-react';
 import { useServices } from '../../context/ServiceContext';
 import { useFilters } from '../../context/FilterContext';
@@ -28,6 +32,7 @@ import { ComparisonLineChart } from '../charts/ComparisonLineChart';
 import { TopCustomerItem } from '../../types/analytics';
 import { formatDatasetTitle } from '../../utils/datasetTitle';
 import { StatisticalEngine } from '../../core/math/statisticalEngine';
+import { CustomerDirectoryModal } from '../ui/CustomerDirectoryModal';
 
 export const ExecutiveView: React.FC = () => {
   const { executiveService, financeService, compareService } = useServices();
@@ -38,7 +43,10 @@ export const ExecutiveView: React.FC = () => {
     secondaryCurrency,
     filters,
     setSelectedMonth,
-    availableMonths
+    availableMonths,
+    setMinCustomerOrders,
+    setCustomerEmailFilter,
+    customerStats
   } = useFilters();
   const {
     activeDataset,
@@ -46,6 +54,10 @@ export const ExecutiveView: React.FC = () => {
     isCompareEnabled,
     openDrillDown
   } = useData();
+
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [customerOrderTier, setCustomerOrderTier] = useState<'all' | '2plus' | '3plus' | '5plus' | '1only'>('all');
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
   const titleA = formatDatasetTitle(activeDataset?.name || '', activeDataset?.region);
   const titleB = secondaryDataset ? formatDatasetTitle(secondaryDataset.name, secondaryDataset.region) : '';
@@ -74,6 +86,30 @@ export const ExecutiveView: React.FC = () => {
   const repeatAov = repeatOrders.length > 0 ? Math.round(repeatRevenue / repeatOrders.length) : 0;
   const firstTimeAov = firstTimeOrders.length > 0 ? Math.round(firstTimeRevenue / firstTimeOrders.length) : 0;
   const aovLiftPercent = firstTimeAov > 0 ? Math.round(((repeatAov - firstTimeAov) / firstTimeAov) * 100) : 0;
+
+  // Filtered and searched customer list for VIP Leaderboard
+  const displayedCustomers = useMemo(() => {
+    let list = metricsA.topCustomers;
+    if (customerOrderTier === '2plus') {
+      list = list.filter(c => c.orderCount >= 2);
+    } else if (customerOrderTier === '3plus') {
+      list = list.filter(c => c.orderCount >= 3);
+    } else if (customerOrderTier === '5plus') {
+      list = list.filter(c => c.orderCount >= 5);
+    } else if (customerOrderTier === '1only') {
+      list = list.filter(c => c.orderCount === 1);
+    }
+
+    if (customerSearch.trim()) {
+      const q = customerSearch.toLowerCase().trim();
+      list = list.filter(c =>
+        c.email.toLowerCase().includes(q) ||
+        c.name.toLowerCase().includes(q)
+      );
+    }
+
+    return list;
+  }, [metricsA.topCustomers, customerOrderTier, customerSearch]);
   // Statistical Pacing & Regression Run-Rate
   const dailyTotals = React.useMemo(() => {
     const map = new Map<string, number>();
@@ -261,9 +297,9 @@ export const ExecutiveView: React.FC = () => {
           value={`${filteredOrders.length} orders`}
           trend={isCompareEnabled && comparison ? comparison.ordersDeltaPercent : (metricsA.hasMomComparison ? metricsA.momVolumeGrowth : undefined)}
           trendLabel={isCompareEnabled && metricsB ? `vs ${titleB}` : (metricsA.hasMomComparison ? `vs ${metricsA.prevMonthLabel}` : "Total shipments")}
-          subValue={isCompareEnabled && metricsB ? `vs ${titleB}: ${secondaryFilteredOrders.length} orders` : (metricsA.hasMomComparison ? undefined : "All processed parcels")}
+          subValue={filters.minCustomerOrders ? `Filtered to customers with ${filters.minCustomerOrders}+ orders` : (isCompareEnabled && metricsB ? `vs ${titleB}: ${secondaryFilteredOrders.length} orders` : (metricsA.hasMomComparison ? undefined : "All processed parcels"))}
           icon={<TrendingUp className="w-4 h-4" />}
-          insightHint="The total count of orders successfully processed in this filtered timeframe."
+          insightHint={filters.minCustomerOrders ? `Showing only orders placed by customers with ${filters.minCustomerOrders}+ orders.` : "The total count of orders successfully processed in this filtered timeframe."}
         />
         <KpiCard
           title="Target Attainment"
@@ -466,76 +502,176 @@ export const ExecutiveView: React.FC = () => {
         <div className="lg:col-span-8 flex flex-col">
           <Card
             className="h-full flex flex-col justify-between"
-            title="Top VIP Customers & Lifetime Spenders"
-            subtitle="Click any customer to open their full order dossier and purchase history"
+            title="Customer Intelligence & VIP Leaderboard"
+            subtitle="Search customer emails, filter by orders placed, or click to open full purchase dossier"
             action={
-              <span className="text-[11px] font-mono text-slate-400 dark:text-zinc-500 font-semibold px-2.5 py-0.5 rounded-lg bg-slate-100 dark:bg-obsidian-850 border border-slate-200/80 dark:border-obsidian-750">
-                {metricsA.totalCustomers} total buyers
-              </span>
+              <button
+                type="button"
+                onClick={() => setIsCustomerModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-semibold bg-role-subtle text-role hover:bg-role hover:text-white transition-all border border-role-subtle shadow-sm"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Inspect All ({metricsA.totalCustomers})</span>
+              </button>
             }
           >
-            <div className="divide-y divide-slate-100 dark:divide-obsidian-800/80 flex-1">
-              {metricsA.topCustomers.slice(0, 6).map((c, idx) => (
-                <div
-                  key={c.email || idx}
-                  onClick={() => handleCustomerClick(c)}
-                  className="py-2.5 px-2 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-obsidian-850/60 rounded-xl transition-all cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    {/* Circular Avatar with Gradient & Initials */}
-                    <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br ${c.avatarColor} text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform`}>
-                      {c.avatarInitials}
-                    </div>
+            {/* Customer Search & Quick Frequency Tabs Toolbar */}
+            <div className="space-y-2.5 mb-3">
+              {/* Search input with email support */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-zinc-500" />
+                <input
+                  type="text"
+                  value={customerSearch}
+                  onChange={(e) => setCustomerSearch(e.target.value)}
+                  placeholder="Search customer email (e.g. user@gmail.com) or name..."
+                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-slate-50 dark:bg-obsidian-850 border border-slate-200 dark:border-obsidian-750 rounded-xl text-slate-800 dark:text-zinc-200 placeholder-slate-400 dark:placeholder-zinc-500 focus:outline-none focus:border-role transition-colors"
+                />
+                {customerSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setCustomerSearch('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-zinc-500 text-xs font-bold"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
 
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-900 dark:text-zinc-100 group-hover:text-role transition-colors truncate">
-                          {c.name}
-                        </span>
-                        {idx === 0 && (
-                          <Crown className="w-3.5 h-3.5 text-role flex-shrink-0" />
-                        )}
-                      </div>
-                      <span className="text-[11px] text-slate-400 dark:text-zinc-500 truncate block font-mono">
-                        {c.email}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-                    <div className="text-right">
-                      <span className="text-xs font-extrabold font-mono text-slate-900 dark:text-zinc-100 block">
-                        {activeCurrency}{c.totalSpend.toLocaleString()}
-                      </span>
-                      <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">
-                        {c.orderCount} {c.orderCount === 1 ? 'order' : 'orders'}
-                      </span>
-                    </div>
-
-                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      c.statusBadge === 'Achieved'
-                        ? 'bg-role-subtle text-role border border-role-subtle'
-                        : c.statusBadge === 'VIP'
-                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/30'
-                        : 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-zinc-800/80 dark:border-zinc-700 dark:text-zinc-400'
-                    }`}>
-                      {c.statusBadge}
-                    </span>
-
-                    <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-role group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
-                  </div>
+              {/* Order Count Filter Pills */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-obsidian-800 text-xs">
+                <div className="flex flex-wrap items-center gap-1 p-0.5 bg-slate-100 dark:bg-obsidian-850 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setCustomerOrderTier('all')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                      customerOrderTier === 'all'
+                        ? 'bg-white dark:bg-obsidian-750 text-slate-900 dark:text-white shadow-sm'
+                        : 'text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                    }`}
+                  >
+                    All ({metricsA.totalCustomers})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCustomerOrderTier('2plus')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                      customerOrderTier === '2plus'
+                        ? 'bg-role text-white font-bold shadow-sm'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-role'
+                    }`}
+                  >
+                    2+ Orders ({customerStats.repeatCustomers})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCustomerOrderTier('3plus')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                      customerOrderTier === '3plus'
+                        ? 'bg-role text-white font-bold shadow-sm'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-role'
+                    }`}
+                  >
+                    3+ Orders ({customerStats.loyalCustomers})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCustomerOrderTier('5plus')}
+                    className={`px-2 py-0.5 rounded text-[11px] font-semibold transition-all ${
+                      customerOrderTier === '5plus'
+                        ? 'bg-role text-white font-bold shadow-sm'
+                        : 'text-slate-600 dark:text-zinc-400 hover:text-role'
+                    }`}
+                  >
+                    VIP ({customerStats.vipCustomers})
+                  </button>
                 </div>
-              ))}
+
+                {customerOrderTier === '2plus' && (
+                  <button
+                    type="button"
+                    onClick={() => setMinCustomerOrders(2)}
+                    className="text-[11px] font-bold text-role hover:underline inline-flex items-center gap-1"
+                  >
+                    Apply 2+ Orders Filter to Dashboard →
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Customer List */}
+            <div className="divide-y divide-slate-100 dark:divide-obsidian-800/80 flex-1">
+              {displayedCustomers.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400 dark:text-zinc-500">
+                  No customers found matching &quot;{customerSearch}&quot; in the selected filter tier.
+                </div>
+              ) : (
+                displayedCustomers.slice(0, 6).map((c, idx) => (
+                  <div
+                    key={c.email || idx}
+                    onClick={() => handleCustomerClick(c)}
+                    className="py-2.5 px-2 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-obsidian-850/60 rounded-xl transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      {/* Circular Avatar with Gradient & Initials */}
+                      <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br ${c.avatarColor} text-white font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-sm group-hover:scale-105 transition-transform`}>
+                        {c.avatarInitials}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900 dark:text-zinc-100 group-hover:text-role transition-colors truncate">
+                            {c.name}
+                          </span>
+                          {c.orderCount >= 5 && (
+                            <Crown className="w-3.5 h-3.5 text-role flex-shrink-0" />
+                          )}
+                        </div>
+                        <span className="text-[11px] text-slate-400 dark:text-zinc-500 truncate block font-mono select-all hover:text-role transition-colors">
+                          {c.email}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
+                      <div className="text-right">
+                        <span className="text-xs font-extrabold font-mono text-slate-900 dark:text-zinc-100 block">
+                          {activeCurrency}{c.totalSpend.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                        <span className="text-[10px] text-slate-400 dark:text-zinc-500 font-mono">
+                          {c.orderCount} {c.orderCount === 1 ? 'order' : 'orders'}
+                        </span>
+                      </div>
+
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                        c.statusBadge === 'Achieved'
+                          ? 'bg-role-subtle text-role border border-role-subtle'
+                          : c.statusBadge === 'VIP'
+                          ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/30'
+                          : 'bg-slate-100 text-slate-600 border border-slate-200 dark:bg-zinc-800/80 dark:border-zinc-700 dark:text-zinc-400'
+                      }`}>
+                        {c.statusBadge}
+                      </span>
+
+                      <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-role group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all" />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Bottom VIP summary bar */}
             <div className="pt-3 mt-2 border-t border-slate-100 dark:border-obsidian-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-zinc-400">
               <span className="text-[11px]">
-                Showing top 6 lifetime value accounts
+                Showing {Math.min(6, displayedCustomers.length)} of {displayedCustomers.length} matching buyers
               </span>
-              <span className="text-[11px] font-mono font-semibold text-role">
-                Top 6 Spend: {activeCurrency}{Math.round(metricsA.topCustomers.slice(0, 6).reduce((s, c) => s + c.totalSpend, 0)).toLocaleString()}
-              </span>
+              <button
+                type="button"
+                onClick={() => setIsCustomerModalOpen(true)}
+                className="text-[11px] font-semibold text-role hover:underline"
+              >
+                Inspect All {metricsA.totalCustomers} Customers Register →
+              </button>
             </div>
           </Card>
         </div>
@@ -665,6 +801,18 @@ export const ExecutiveView: React.FC = () => {
           </div>
         </Card>
       )}
+
+      {/* Full Customer Directory Modal */}
+      <CustomerDirectoryModal
+        isOpen={isCustomerModalOpen}
+        onClose={() => setIsCustomerModalOpen(false)}
+        customers={metricsA.topCustomers}
+        currencySymbol={activeCurrency}
+        datasetName={titleA}
+        onSelectCustomer={handleCustomerClick}
+        onFilterByEmail={(email) => setCustomerEmailFilter(email)}
+        onFilterByMinOrders={(min) => setMinCustomerOrders(min)}
+      />
     </div>
   );
 };

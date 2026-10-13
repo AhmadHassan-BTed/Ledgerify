@@ -22,4 +22,7 @@ export interface FilterState {
   status: StatusFilter;
   activeTab: ViewTab;
   customCurrency?: string | null;
+  minCustomerOrders?: number | null; // e.g. 2 for 2+ orders, 3 for 3+ orders, etc.
+  customerEmailFilter?: string | null; // exact or specific customer email filter
 }
+

@@ -68,90 +68,101 @@ export class XlsxParser implements IFileParser {
       // Check if this sheet is a ledger-like sheet
       const lowerName = sheetName.toLowerCase();
       const hasOrderCol = rawHeaders.some(h => findMappedKey({ [h]: '' }, 'orderNumber') !== null);
-      const isLedger = lowerName.includes('ledger') || hasOrderCol;
+      const isSummary = lowerName.includes('summary') || lowerName.includes('frequency') || lowerName.includes('returning cust') || lowerName.includes('refund');
+      const isLedger = !isSummary && (lowerName.includes('ledger') || hasOrderCol);
 
       // Discover dynamic category columns in this sheet
       const { categories, qtyCols, amountCols } = discoverCategoryColumns(rawHeaders);
       categories.forEach(c => globalCategories.add(c));
 
-      // Parse orders from this sheet
+      // Parse orders from this sheet (only for actual ledger sheets)
       const sheetOrders: NormalizedOrder[] = [];
-      for (let i = 0; i < rowsAsObjects.length; i++) {
-        const row = rowsAsObjects[i];
+      if (isLedger) {
+        for (let i = 0; i < rowsAsObjects.length; i++) {
+          const row = rowsAsObjects[i];
 
-        const orderNumber = String(this.getValue(row, 'orderNumber') ?? `#${i + 1}`).trim();
-        const customerName = String(this.getValue(row, 'customerName') ?? 'Unknown Customer').trim();
-        const email = String(this.getValue(row, 'email') ?? '').trim();
-        const city = String(this.getValue(row, 'city') ?? '').trim();
-        const provinceState = String(this.getValue(row, 'provinceState') ?? '').trim();
-        const country = String(this.getValue(row, 'country') ?? (detectedRegion === 'UK' ? 'GB' : 'US')).trim();
-        const fragrancesRaw = String(this.getValue(row, 'fragrancesOrdered') ?? '').trim();
-        
-        const orderQuantity = Math.max(0, Number(this.getValue(row, 'orderQuantity')) || 0);
-        const orderValue = Math.max(0, Number(this.getValue(row, 'orderValue')) || 0);
-        const rawStatus = String(this.getValue(row, 'status') ?? 'paid').toLowerCase().trim();
+          const rawOrderNum = this.getValue(row, 'orderNumber');
+          const customerName = String(this.getValue(row, 'customerName') ?? '').trim();
+          const email = String(this.getValue(row, 'email') ?? '').trim();
+          const fragrancesRaw = String(this.getValue(row, 'fragrancesOrdered') ?? '').trim();
+          const orderValue = Math.max(0, Number(this.getValue(row, 'orderValue')) || 0);
 
-        // Safe date parse
-        const rawDate = this.getValue(row, 'date');
-        const parsedDate = this.formatDate(rawDate);
-        const month = parsedDate.substring(0, 7);
-        const dateObj = new Date(parsedDate);
-        const dayOfWeek = isNaN(dateObj.getTime()) ? 0 : dateObj.getDay();
+          // Skip completely empty or summary-like rows that have no order number, customer, email, or items
+          if (!rawOrderNum && !customerName && !email && !fragrancesRaw && orderValue === 0) {
+            continue;
+          }
 
-        // Dynamically extract category quantities and amounts
-        const categoryQuantities: Record<string, number> = {};
-        const categoryAmounts: Record<string, number> = {};
+          const orderNumber = String(rawOrderNum ?? `#${i + 1}`).trim();
+          const finalCustomerName = customerName || 'Unknown Customer';
+          const city = String(this.getValue(row, 'city') ?? '').trim();
+          const provinceState = String(this.getValue(row, 'provinceState') ?? '').trim();
+          const country = String(this.getValue(row, 'country') ?? (detectedRegion === 'UK' ? 'GB' : 'US')).trim();
+          
+          const orderQuantity = Math.max(0, Number(this.getValue(row, 'orderQuantity')) || 0);
+          const rawStatus = String(this.getValue(row, 'status') ?? 'paid').toLowerCase().trim();
 
-        for (const cat of categories) {
-          const qCol = qtyCols[cat];
-          const aCol = amountCols[cat];
-          categoryQuantities[cat] = qCol ? Math.max(0, Number(row[qCol]) || 0) : 0;
-          categoryAmounts[cat] = aCol ? Math.max(0, Number(row[aCol]) || 0) : 0;
+          // Safe date parse
+          const rawDate = this.getValue(row, 'date');
+          const parsedDate = this.formatDate(rawDate);
+          const month = parsedDate.substring(0, 7);
+          const dateObj = new Date(parsedDate);
+          const dayOfWeek = isNaN(dateObj.getTime()) ? 0 : dateObj.getDay();
+
+          // Dynamically extract category quantities and amounts
+          const categoryQuantities: Record<string, number> = {};
+          const categoryAmounts: Record<string, number> = {};
+
+          for (const cat of categories) {
+            const qCol = qtyCols[cat];
+            const aCol = amountCols[cat];
+            categoryQuantities[cat] = qCol ? Math.max(0, Number(row[qCol]) || 0) : 0;
+            categoryAmounts[cat] = aCol ? Math.max(0, Number(row[aCol]) || 0) : 0;
+          }
+
+          // Dynamically parse fragrance items
+          const fragrancesParsed = parseFragranceString(fragrancesRaw);
+          fragrancesParsed.forEach(f => {
+            if (f.size) globalVariants.add(f.size);
+          });
+
+          // Status classification
+          const isRefunded = rawStatus.includes('refund') && !rawStatus.includes('partial');
+          const isPartiallyRefunded = rawStatus.includes('partial');
+          const isCancelled = rawStatus.includes('cancel');
+          const isPaid = rawStatus === 'paid' || (!isRefunded && !isCancelled);
+
+          // Anomaly flags
+          const flags: string[] = [];
+          if (!email && isLedger) flags.push('Missing Email');
+          if (!city && isLedger) flags.push('Missing City');
+          if (!fragrancesRaw && isLedger) flags.push('Missing Fragrance Item');
+          if (orderValue === 0 && isLedger) flags.push('$0 Order Value');
+          if (orderQuantity >= 10) flags.push(`High Quantity (${orderQuantity} items)`);
+
+          sheetOrders.push({
+            orderNumber,
+            customerName: finalCustomerName,
+            email,
+            city,
+            provinceState,
+            country,
+            fragrancesRaw,
+            fragrancesParsed,
+            orderQuantity,
+            orderValue,
+            status: rawStatus,
+            date: parsedDate,
+            month,
+            dayOfWeek,
+            categoryQuantities,
+            categoryAmounts,
+            isRefunded,
+            isPartiallyRefunded,
+            isCancelled,
+            isPaid,
+            flags
+          });
         }
-
-        // Dynamically parse fragrance items
-        const fragrancesParsed = parseFragranceString(fragrancesRaw);
-        fragrancesParsed.forEach(f => {
-          if (f.size) globalVariants.add(f.size);
-        });
-
-        // Status classification
-        const isRefunded = rawStatus.includes('refund') && !rawStatus.includes('partial');
-        const isPartiallyRefunded = rawStatus.includes('partial');
-        const isCancelled = rawStatus.includes('cancel');
-        const isPaid = rawStatus === 'paid' || (!isRefunded && !isCancelled);
-
-        // Anomaly flags
-        const flags: string[] = [];
-        if (!email && isLedger) flags.push('Missing Email');
-        if (!city && isLedger) flags.push('Missing City');
-        if (!fragrancesRaw && isLedger) flags.push('Missing Fragrance Item');
-        if (orderValue === 0 && isLedger) flags.push('$0 Order Value');
-        if (orderQuantity >= 10) flags.push(`High Quantity (${orderQuantity} items)`);
-
-        sheetOrders.push({
-          orderNumber,
-          customerName,
-          email,
-          city,
-          provinceState,
-          country,
-          fragrancesRaw,
-          fragrancesParsed,
-          orderQuantity,
-          orderValue,
-          status: rawStatus,
-          date: parsedDate,
-          month,
-          dayOfWeek,
-          categoryQuantities,
-          categoryAmounts,
-          isRefunded,
-          isPartiallyRefunded,
-          isCancelled,
-          isPaid,
-          flags
-        });
       }
 
       sheets[sheetName] = {

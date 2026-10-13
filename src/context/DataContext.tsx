@@ -60,12 +60,18 @@ interface DataContextType {
 }
 
 const getDefaultSheetForDataset = (d: Dataset | null | undefined): string => {
-  if (!d || !d.sheets) return d?.selectedSheet || 'default';
-  const keys = Object.keys(d.sheets);
-  if (keys.length > 1) {
-    return 'All Sheets (Combined)';
+  if (!d) return 'Ledger';
+  if (d.selectedSheet && d.sheets && d.sheets[d.selectedSheet]) {
+    return d.selectedSheet;
   }
-  return keys[0] || d.selectedSheet || 'default';
+  if (!d.sheets) return d.selectedSheet || 'Ledger';
+  const keys = Object.keys(d.sheets);
+  const ledgerKey = keys.find(k => k.toLowerCase() === 'ledger')
+    || keys.find(k => d.sheets[k]?.isLedger && d.sheets[k]?.rowCount > 0);
+  if (ledgerKey) {
+    return ledgerKey;
+  }
+  return keys[0] || 'Ledger';
 };
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -84,9 +90,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [selectedSheet, setSelectedSheetState] = useState<string>(() => {
     try {
-      return localStorage.getItem('ledgerify_selected_sheet') || 'All Sheets (Combined)';
+      const saved = localStorage.getItem('ledgerify_selected_sheet');
+      return (saved && saved !== 'All Sheets (Combined)') ? saved : 'Ledger';
     } catch {
-      return 'All Sheets (Combined)';
+      return 'Ledger';
     }
   });
 
@@ -108,9 +115,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [secondarySelectedSheet, setSecondarySelectedSheetState] = useState<string>(() => {
     try {
-      return localStorage.getItem('ledgerify_secondary_selected_sheet') || 'All Sheets (Combined)';
+      const saved = localStorage.getItem('ledgerify_secondary_selected_sheet');
+      return (saved && saved !== 'All Sheets (Combined)') ? saved : 'Ledger';
     } catch {
-      return 'All Sheets (Combined)';
+      return 'Ledger';
     }
   });
 
@@ -222,7 +230,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setActiveDatasetIdState(targetActive.id);
           
           const savedSheet = localStorage.getItem('ledgerify_selected_sheet');
-          setSelectedSheetState(savedSheet && (savedSheet === 'All Sheets (Combined)' || targetActive.sheets?.[savedSheet]) ? savedSheet : getDefaultSheetForDataset(targetActive));
+          const defaultSheet = getDefaultSheetForDataset(targetActive);
+          const nextSheet = (savedSheet && savedSheet !== 'All Sheets (Combined)' && targetActive.sheets?.[savedSheet])
+            ? savedSheet
+            : defaultSheet;
+          setSelectedSheetState(nextSheet);
 
           // Restore saved compared dataset IDs
           let savedCompared: string[] = [];
@@ -345,10 +357,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!activeDataset.sheets) {
       return (activeDataset as any).availableSheets || [activeDataset.selectedSheet || 'Ledger'];
     }
-    const list = Object.keys(activeDataset.sheets);
-    if (list.length > 1 && !list.includes('All Sheets (Combined)')) {
-      return ['All Sheets (Combined)', ...list];
-    }
+    const list = Object.keys(activeDataset.sheets).filter(k => {
+      const s = activeDataset.sheets[k];
+      return s && (s.isLedger || s.rowCount > 0);
+    });
     return list;
   }, [activeDataset]);
 
@@ -360,10 +372,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (selectedSheet === 'All Sheets (Combined)') {
+      // If the workbook already has a master 'Ledger' sheet, that sheet contains the full dataset
+      const masterLedgerKey = Object.keys(activeDataset.sheets).find(k => k.toLowerCase() === 'ledger');
+      if (masterLedgerKey && activeDataset.sheets[masterLedgerKey]?.orders?.length > 0) {
+        return activeDataset.sheets[masterLedgerKey].orders;
+      }
+
       const seen = new Set<string>();
       const combined: NormalizedOrder[] = [];
       for (const s of Object.values(activeDataset.sheets) as SheetData[]) {
-        if (s && Array.isArray(s.orders)) {
+        if (s && s.isLedger && Array.isArray(s.orders)) {
           for (const o of s.orders) {
             if (o && o.orderNumber && !seen.has(o.orderNumber)) {
               seen.add(o.orderNumber);
@@ -391,10 +409,15 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     if (secondarySelectedSheet === 'All Sheets (Combined)') {
+      const masterLedgerKey = Object.keys(secondaryDataset.sheets).find(k => k.toLowerCase() === 'ledger');
+      if (masterLedgerKey && secondaryDataset.sheets[masterLedgerKey]?.orders?.length > 0) {
+        return secondaryDataset.sheets[masterLedgerKey].orders;
+      }
+
       const seen = new Set<string>();
       const combined: NormalizedOrder[] = [];
       for (const s of Object.values(secondaryDataset.sheets) as SheetData[]) {
-        if (s && Array.isArray(s.orders)) {
+        if (s && s.isLedger && Array.isArray(s.orders)) {
           for (const o of s.orders) {
             if (o && o.orderNumber && !seen.has(o.orderNumber)) {
               seen.add(o.orderNumber);
